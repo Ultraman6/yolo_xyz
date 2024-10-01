@@ -1,4 +1,4 @@
-# Ultralytics YOLO 🚀, AGPL-3.0 license
+# Ultralytics YOLO_xyz 🚀, AGPL-3.0 license
 """
 Export a YOLOv8 PyTorch model to other formats. TensorFlow exports authored by https://github.com/zldrobit.
 
@@ -22,8 +22,8 @@ Requirements:
     $ pip install "ultralytics[export]"
 
 Python:
-    from ultralytics import YOLO
-    model = YOLO('yolov8n.pt')
+    from ultralytics import YOLO_xyz
+    model = YOLO_xyz('yolov8n.pt')
     results = model.export(format='onnx')
 
 CLI:
@@ -95,7 +95,9 @@ from ultralytics.utils.torch_utils import TORCH_1_13, get_latest_opset, select_d
 
 
 def export_formats():
-    """Ultralytics YOLO export formats."""
+    """YOLOv8 export formats."""
+    import pandas  # scope for faster 'import ultralytics'
+
     x = [
         ["PyTorch", "-", ".pt", True, True],
         ["TorchScript", "torchscript", ".torchscript", True, True],
@@ -111,7 +113,7 @@ def export_formats():
         ["PaddlePaddle", "paddle", "_paddle_model", True, True],
         ["NCNN", "ncnn", "_ncnn_model", True, True],
     ]
-    return dict(zip(["Format", "Argument", "Suffix", "CPU", "GPU"], zip(*x)))
+    return pandas.DataFrame(x, columns=["Format", "Argument", "Suffix", "CPU", "GPU"])
 
 
 def gd_outputs(gd):
@@ -271,7 +273,7 @@ class Exporter:
             if isinstance(y, torch.Tensor)
             else tuple(tuple(x.shape if isinstance(x, torch.Tensor) else []) for x in y)
         )
-        self.pretty_name = Path(self.model.yaml.get("yaml_file", self.file)).stem.replace("yolo", "YOLO")
+        self.pretty_name = Path(self.model.yaml.get("yaml_file", self.file)).stem.replace("yolo", "YOLO_xyz")
         data = model.args["data"] if hasattr(model, "args") and isinstance(model.args, dict) else ""
         description = f'Ultralytics {self.pretty_name} model {f"trained on {data}" if data else ""}'
         self.metadata = {
@@ -389,7 +391,7 @@ class Exporter:
         """YOLOv8 ONNX export."""
         requirements = ["onnx>=1.12.0"]
         if self.args.simplify:
-            requirements += ["onnxslim==0.1.34", "onnxruntime" + ("-gpu" if torch.cuda.is_available() else "")]
+            requirements += ["onnxslim==0.1.32", "onnxruntime" + ("-gpu" if torch.cuda.is_available() else "")]
         check_requirements(requirements)
         import onnx  # noqa
 
@@ -1177,10 +1179,10 @@ class Exporter:
 
 
 class IOSDetectModel(torch.nn.Module):
-    """Wrap an Ultralytics YOLO model for Apple iOS CoreML export."""
+    """Wrap an Ultralytics YOLO_xyz model for Apple iOS CoreML export."""
 
     def __init__(self, model, im):
-        """Initialize the IOSDetectModel class with a YOLO model and example image."""
+        """Initialize the IOSDetectModel class with a YOLO_xyz model and example image."""
         super().__init__()
         _, _, h, w = im.shape  # batch, channel, height, width
         self.model = model

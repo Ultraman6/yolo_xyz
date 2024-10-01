@@ -1,4 +1,4 @@
-# Ultralytics YOLO 🚀, AGPL-3.0 license
+# Ultralytics YOLO_xyz 🚀, AGPL-3.0 license
 """
 Run prediction on images, videos, directories, globs, YouTube, webcam, streams, etc.
 
@@ -299,7 +299,7 @@ class BasePredictor:
         self.run_callbacks("on_predict_end")
 
     def setup_model(self, model, verbose=True):
-        """Initialize YOLO model with given parameters and set it to evaluation mode."""
+        """Initialize YOLO_xyz model with given parameters and set it to evaluation mode."""
         self.model = AutoBackend(
             weights=model or self.args.model,
             device=select_device(self.args.device, verbose=verbose),

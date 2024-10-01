@@ -1,4 +1,4 @@
-# Ultralytics YOLO 🚀, AGPL-3.0 license
+# Ultralytics YOLO_xyz 🚀, AGPL-3.0 license
 
 import json
 from collections import defaultdict
@@ -222,7 +222,7 @@ def convert_coco(
     lvis=False,
 ):
     """
-    Converts COCO dataset annotations to a YOLO annotation format  suitable for training YOLO models.
+    Converts COCO dataset annotations to a YOLO_xyz annotation format  suitable for training YOLO_xyz models.
 
     Args:
         labels_dir (str, optional): Path to directory containing COCO dataset annotation files.
@@ -335,14 +335,14 @@ def convert_coco(
 
 def convert_segment_masks_to_yolo_seg(masks_dir, output_dir, classes):
     """
-    Converts a dataset of segmentation mask images to the YOLO segmentation format.
+    Converts a dataset of segmentation mask images to the YOLO_xyz segmentation format.
 
-    This function takes the directory containing the binary format mask images and converts them into YOLO segmentation format.
+    This function takes the directory containing the binary format mask images and converts them into YOLO_xyz segmentation format.
     The converted masks are saved in the specified output directory.
 
     Args:
         masks_dir (str): The path to the directory where all mask images (png, jpg) are stored.
-        output_dir (str): The path to the directory where the converted YOLO segmentation masks will be stored.
+        output_dir (str): The path to the directory where the converted YOLO_xyz segmentation masks will be stored.
         classes (int): Total classes in the dataset i.e. for COCO classes=80
 
     Example:
@@ -394,7 +394,7 @@ def convert_segment_masks_to_yolo_seg(masks_dir, output_dir, classes):
                 )  # Find contours
 
                 for contour in contours:
-                    if len(contour) >= 3:  # YOLO requires at least 3 points for a valid segmentation
+                    if len(contour) >= 3:  # YOLO_xyz requires at least 3 points for a valid segmentation
                         contour = contour.squeeze()  # Remove single-dimensional entries
                         yolo_format = [class_index]
                         for point in contour:
@@ -402,7 +402,7 @@ def convert_segment_masks_to_yolo_seg(masks_dir, output_dir, classes):
                             yolo_format.append(round(point[0] / img_width, 6))  # Rounding to 6 decimal places
                             yolo_format.append(round(point[1] / img_height, 6))
                         yolo_format_data.append(yolo_format)
-            # Save Ultralytics YOLO format data to file
+            # Save Ultralytics YOLO_xyz format data to file
             output_path = Path(output_dir) / f"{mask_path.stem}.txt"
             with open(output_path, "w") as file:
                 for item in yolo_format_data:
@@ -413,10 +413,10 @@ def convert_segment_masks_to_yolo_seg(masks_dir, output_dir, classes):
 
 def convert_dota_to_yolo_obb(dota_root_path: str):
     """
-    Converts DOTA dataset annotations to YOLO OBB (Oriented Bounding Box) format.
+    Converts DOTA dataset annotations to YOLO_xyz OBB (Oriented Bounding Box) format.
 
     The function processes images in the 'train' and 'val' folders of the DOTA dataset. For each image, it reads the
-    associated label from the original labels directory and writes new labels in YOLO OBB format to a new directory.
+    associated label from the original labels directory and writes new labels in YOLO_xyz OBB format to a new directory.
 
     Args:
         dota_root_path (str): The root directory path of the DOTA dataset.
@@ -471,7 +471,7 @@ def convert_dota_to_yolo_obb(dota_root_path: str):
     }
 
     def convert_label(image_name, image_width, image_height, orig_label_dir, save_dir):
-        """Converts a single image's DOTA annotation to YOLO OBB format and saves it to a specified directory."""
+        """Converts a single image's DOTA annotation to YOLO_xyz OBB format and saves it to a specified directory."""
         orig_label_path = orig_label_dir / f"{image_name}.txt"
         save_path = save_dir / f"{image_name}.txt"
 
@@ -575,7 +575,7 @@ def merge_multi_segment(segments):
 def yolo_bbox2segment(im_dir, save_dir=None, sam_model="sam_b.pt"):
     """
     Converts existing object detection dataset (bounding boxes) to segmentation dataset or oriented bounding box (OBB)
-    in YOLO format. Generates segmentation data using SAM auto-annotator as needed.
+    in YOLO_xyz format. Generates segmentation data using SAM auto-annotator as needed.
 
     Args:
         im_dir (str | Path): Path to image directory to convert.

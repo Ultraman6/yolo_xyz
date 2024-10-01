@@ -1,4 +1,4 @@
-# Ultralytics YOLO 🚀, AGPL-3.0 license
+# Ultralytics YOLO_xyz 🚀, AGPL-3.0 license
 
 import os
 import random
@@ -82,7 +82,7 @@ def seed_worker(worker_id):  # noqa
 
 
 def build_yolo_dataset(cfg, img_path, batch, data, mode="train", rect=False, stride=32, multi_modal=False):
-    """Build YOLO Dataset."""
+    """Build YOLO_xyz Dataset."""
     dataset = YOLOMultiModalDataset if multi_modal else YOLODataset
     return dataset(
         img_path=img_path,
@@ -104,7 +104,7 @@ def build_yolo_dataset(cfg, img_path, batch, data, mode="train", rect=False, str
 
 
 def build_grounding(cfg, img_path, json_file, batch, mode="train", rect=False, stride=32):
-    """Build YOLO Dataset."""
+    """Build YOLO_xyz Dataset."""
     return GroundingDataset(
         img_path=img_path,
         json_file=json_file,

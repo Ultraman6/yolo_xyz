@@ -1,4 +1,4 @@
-# Ultralytics YOLO 🚀, AGPL-3.0 license
+# Ultralytics YOLO_xyz 🚀, AGPL-3.0 license
 
 import os
 from pathlib import Path
@@ -48,7 +48,7 @@ class DetectionValidator(BaseValidator):
             )
 
     def preprocess(self, batch):
-        """Preprocesses batch of images for YOLO training."""
+        """Preprocesses batch of images for YOLO_xyz training."""
         batch["img"] = batch["img"].to(self.device, non_blocking=True)
         batch["img"] = (batch["img"].half() if self.args.half else batch["img"].float()) / 255
         for k in ["batch_idx", "cls", "bboxes"]:
@@ -66,7 +66,7 @@ class DetectionValidator(BaseValidator):
         return batch
 
     def init_metrics(self, model):
-        """Initialize evaluation metrics for YOLO."""
+        """Initialize evaluation metrics for YOLO_xyz."""
         val = self.data.get(self.args.split, "")  # validation path
         self.is_coco = (
             isinstance(val, str)
@@ -86,7 +86,7 @@ class DetectionValidator(BaseValidator):
         self.stats = dict(tp=[], conf=[], pred_cls=[], target_cls=[], target_img=[])
 
     def get_desc(self):
-        """Return a formatted string summarizing class metrics of YOLO model."""
+        """Return a formatted string summarizing class metrics of YOLO_xyz model."""
         return ("%22s" + "%11s" * 6) % ("Class", "Images", "Instances", "Box(P", "R", "mAP50", "mAP50-95)")
 
     def postprocess(self, preds):
@@ -229,7 +229,7 @@ class DetectionValidator(BaseValidator):
 
     def build_dataset(self, img_path, mode="val", batch=None):
         """
-        Build YOLO Dataset.
+        Build YOLO_xyz Dataset.
 
         Args:
             img_path (str): Path to the folder containing images.
@@ -268,7 +268,7 @@ class DetectionValidator(BaseValidator):
         )  # pred
 
     def save_one_txt(self, predn, save_conf, shape, file):
-        """Save YOLO detections to a txt file in normalized coordinates in a specific format."""
+        """Save YOLO_xyz detections to a txt file in normalized coordinates in a specific format."""
         from ultralytics.engine.results import Results
 
         Results(
@@ -279,7 +279,7 @@ class DetectionValidator(BaseValidator):
         ).save_txt(file, save_conf=save_conf)
 
     def pred_to_json(self, predn, filename):
-        """Serialize YOLO predictions to COCO json format."""
+        """Serialize YOLO_xyz predictions to COCO json format."""
         stem = Path(filename).stem
         image_id = int(stem) if stem.isnumeric() else stem
         box = ops.xyxy2xywh(predn[:, :4])  # xywh
@@ -296,7 +296,7 @@ class DetectionValidator(BaseValidator):
             )
 
     def eval_json(self, stats):
-        """Evaluates YOLO output in JSON format and returns performance statistics."""
+        """Evaluates YOLO_xyz output in JSON format and returns performance statistics."""
         if self.args.save_json and (self.is_coco or self.is_lvis) and len(self.jdict):
             pred_json = self.save_dir / "predictions.json"  # predictions
             anno_json = (

@@ -1,4 +1,4 @@
-# Ultralytics YOLO 🚀, AGPL-3.0 license
+# Ultralytics YOLO_xyz 🚀, AGPL-3.0 license
 
 from ultralytics.models.yolo.segment import SegmentationValidator
 from ultralytics.utils.metrics import SegmentMetrics
@@ -6,7 +6,7 @@ from ultralytics.utils.metrics import SegmentMetrics
 
 class FastSAMValidator(SegmentationValidator):
     """
-    Custom validation class for fast SAM (Segment Anything Model) segmentation in Ultralytics YOLO framework.
+    Custom validation class for fast SAM (Segment Anything Model) segmentation in Ultralytics YOLO_xyz framework.
 
     Extends the SegmentationValidator class, customizing the validation process specifically for fast SAM. This class
     sets the task to 'segment' and uses the SegmentMetrics for evaluation. Additionally, plotting features are disabled

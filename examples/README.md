@@ -1,6 +1,6 @@
-## Ultralytics Examples
+## Ultralytics YOLOv8 Example Applications
 
-This directory features a collection of real-world applications and walkthroughs, provided as either Python files or notebooks. Explore the examples below to see how YOLO can be integrated into various applications.
+This repository features a collection of real-world applications and walkthroughs, provided as either Python files or notebooks. Explore the examples below to see how YOLOv8 can be integrated into various applications.
 
 ### Ultralytics YOLO Example Applications
 
@@ -32,6 +32,6 @@ We greatly appreciate contributions from the community, including examples, appl
    - Avoids adding large files or dependencies unless they are absolutely necessary for the example.
    - Contributors should be willing to provide support for their examples and address related issues.
 
-For more detailed information and guidance on contributing, please visit our [contribution documentation](https://docs.ultralytics.com/help/contributing/).
+For more detailed information and guidance on contributing, please visit our [contribution documentation](https://docs.ultralytics.com/help/contributing).
 
 If you encounter any questions or concerns regarding these guidelines, feel free to open a PR or an issue in the repository, and we will assist you in the contribution process.

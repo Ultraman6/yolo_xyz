@@ -1,4 +1,4 @@
-# Ultralytics YOLO 🚀, AGPL-3.0 license
+# Ultralytics YOLO_xyz 🚀, AGPL-3.0 license
 
 import subprocess
 
@@ -13,7 +13,7 @@ def run_ray_tune(
     Runs hyperparameter tuning using Ray Tune.
 
     Args:
-        model (YOLO): Model to run the tuner on.
+        model (YOLO_xyz): Model to run the tuner on.
         space (dict, optional): The hyperparameter search space. Defaults to None.
         grace_period (int, optional): The grace period in epochs of the ASHA scheduler. Defaults to 10.
         gpu_per_trial (int, optional): The number of GPUs to allocate per trial. Defaults to None.
@@ -25,10 +25,10 @@ def run_ray_tune(
 
     Example:
         ```python
-        from ultralytics import YOLO
+        from ultralytics import YOLO_xyz
 
         # Load a YOLOv8n model
-        model = YOLO("yolov8n.pt")
+        model = YOLO_xyz("yolov8n.pt")
 
         # Start tuning hyperparameters for YOLOv8n training on the COCO8 dataset
         result_grid = model.tune(data="coco8.yaml", use_ray=True)
@@ -89,7 +89,7 @@ def run_ray_tune(
 
     def _tune(config):
         """
-        Trains the YOLO model with the specified hyperparameters and additional arguments.
+        Trains the YOLO_xyz model with the specified hyperparameters and additional arguments.
 
         Args:
             config (dict): A dictionary of hyperparameters to use for training.

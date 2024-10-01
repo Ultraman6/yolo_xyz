@@ -1,4 +1,4 @@
-# Ultralytics YOLO 🚀, AGPL-3.0 license
+# Ultralytics YOLO_xyz 🚀, AGPL-3.0 license
 """
 Ultralytics modules.
 
@@ -20,7 +20,6 @@ Example:
 from .block import (
     C1,
     C2,
-    C2PSA,
     C3,
     C3TR,
     CIB,
@@ -39,9 +38,7 @@ from .block import (
     C2f,
     C2fAttn,
     C2fCIB,
-    C2fPSA,
     C3Ghost,
-    C3k2,
     C3x,
     CBFuse,
     CBLinear,
@@ -55,7 +52,7 @@ from .block import (
     RepNCSPELAN4,
     RepVGGDW,
     ResNetLayer,
-    SCDown,
+    SCDown, C2fCIBAttn,
 )
 from .conv import (
     CBAM,
@@ -72,7 +69,7 @@ from .conv import (
     RepConv,
     SpatialAttention,
 )
-from .head import OBB, Classify, Detect, Pose, RTDETRDecoder, Segment, WorldDetect, v10Detect
+from .head import OBB, Classify, Detect, Pose, RTDETRDecoder, Segment, WorldDetect, v10Detect, Worldv10Detect, v10OBB
 from .transformer import (
     AIFI,
     MLP,
@@ -113,10 +110,6 @@ __all__ = (
     "C2",
     "C3",
     "C2f",
-    "C3k2",
-    "SCDown",
-    "C2fPSA",
-    "C2PSA",
     "C2fAttn",
     "C3x",
     "C3TR",
@@ -141,6 +134,8 @@ __all__ = (
     "OBB",
     "WorldDetect",
     "v10Detect",
+    "v10OBB",
+    "Worldv10Detect",
     "ImagePoolingAttn",
     "ContrastiveHead",
     "BNContrastiveHead",
@@ -154,6 +149,8 @@ __all__ = (
     "RepVGGDW",
     "CIB",
     "C2fCIB",
+    "C2fCIBAttn",
     "Attention",
     "PSA",
+    "SCDown",
 )

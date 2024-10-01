@@ -1,4 +1,4 @@
-# Ultralytics YOLO 🚀, AGPL-3.0 license
+# Ultralytics YOLO_xyz 🚀, AGPL-3.0 license
 import torch
 from PIL import Image
 
@@ -13,7 +13,7 @@ from .utils import adjust_bboxes_to_image_border
 class FastSAMPredictor(SegmentationPredictor):
     """
     FastSAMPredictor is specialized for fast SAM (Segment Anything Model) segmentation prediction tasks in Ultralytics
-    YOLO framework.
+    YOLO_xyz framework.
 
     This class extends the SegmentationPredictor, customizing the prediction pipeline specifically for fast SAM. It
     adjusts post-processing steps to incorporate mask prediction and non-max suppression while optimizing for single-
@@ -21,7 +21,7 @@ class FastSAMPredictor(SegmentationPredictor):
     """
 
     def __init__(self, cfg=DEFAULT_CFG, overrides=None, _callbacks=None):
-        """Initializes a FastSAMPredictor for fast SAM segmentation tasks in Ultralytics YOLO framework."""
+        """Initializes a FastSAMPredictor for fast SAM segmentation tasks in Ultralytics YOLO_xyz framework."""
         super().__init__(cfg, overrides, _callbacks)
         self.prompts = {}
 

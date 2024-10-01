@@ -1,4 +1,4 @@
-# Ultralytics YOLO 🚀, AGPL-3.0 license
+# Ultralytics YOLO_xyz 🚀, AGPL-3.0 license
 
 import contextlib
 import shutil
@@ -19,7 +19,7 @@ from ultralytics.utils import (
     ROOT,
     RUNS_DIR,
     SETTINGS,
-    SETTINGS_FILE,
+    SETTINGS_YAML,
     TESTS_RUNNING,
     IterableSimpleNamespace,
     __version__,
@@ -42,11 +42,11 @@ TASK2DATA = {
     "obb": "dota8.yaml",
 }
 TASK2MODEL = {
-    "detect": "yolo11n.pt",
-    "segment": "yolo11n-seg.pt",
-    "classify": "yolo11n-cls.pt",
-    "pose": "yolo11n-pose.pt",
-    "obb": "yolo11n-obb.pt",
+    "detect": "yolov8n.pt",
+    "segment": "yolov8n-seg.pt",
+    "classify": "yolov8n-cls.pt",
+    "pose": "yolov8n-pose.pt",
+    "obb": "yolov8n-obb.pt",
 }
 TASK2METRIC = {
     "detect": "metrics/mAP50-95(B)",
@@ -69,19 +69,19 @@ CLI_HELP_MSG = f"""
                     See all ARGS at https://docs.ultralytics.com/usage/cfg or with 'yolo cfg'
 
     1. Train a detection model for 10 epochs with an initial learning_rate of 0.01
-        yolo train data=coco8.yaml model=yolo11n.pt epochs=10 lr0=0.01
+        yolo train data=coco8.yaml model=yolov8n.pt epochs=10 lr0=0.01
 
     2. Predict a YouTube video using a pretrained segmentation model at image size 320:
-        yolo predict model=yolo11n-seg.pt source='https://youtu.be/LNwODJXcvt4' imgsz=320
+        yolo predict model=yolov8n-seg.pt source='https://youtu.be/LNwODJXcvt4' imgsz=320
 
     3. Val a pretrained detection model at batch-size 1 and image size 640:
-        yolo val model=yolo11n.pt data=coco8.yaml batch=1 imgsz=640
+        yolo val model=yolov8n.pt data=coco8.yaml batch=1 imgsz=640
 
-    4. Export a YOLO11n classification model to ONNX format at image size 224 by 128 (no TASK required)
-        yolo export model=yolo11n-cls.pt format=onnx imgsz=224,128
+    4. Export a YOLOv8n classification model to ONNX format at image size 224 by 128 (no TASK required)
+        yolo export model=yolov8n-cls.pt format=onnx imgsz=224,128
 
     5. Explore your datasets using semantic search and SQL with a simple GUI powered by Ultralytics Explorer API
-        yolo explorer data=data.yaml model=yolo11n.pt
+        yolo explorer data=data.yaml model=yolov8n.pt
     
     6. Streamlit real-time webcam inference GUI
         yolo streamlit-predict
@@ -436,7 +436,7 @@ def check_dict_alignment(base: Dict, custom: Dict, e=None):
             matches = get_close_matches(x, base_keys)  # key list
             matches = [f"{k}={base[k]}" if base.get(k) is not None else k for k in matches]
             match_str = f"Similar arguments are i.e. {matches}." if matches else ""
-            string += f"'{colorstr('red', 'bold', x)}' is not a valid YOLO argument. {match_str}\n"
+            string += f"'{colorstr('red', 'bold', x)}' is not a valid YOLO_xyz argument. {match_str}\n"
         raise SyntaxError(string + CLI_HELP_MSG) from e
 
 
@@ -507,17 +507,17 @@ def handle_yolo_hub(args: List[str]) -> None:
 
 def handle_yolo_settings(args: List[str]) -> None:
     """
-    Handles YOLO settings command-line interface (CLI) commands.
+    Handles YOLO_xyz settings command-line interface (CLI) commands.
 
-    This function processes YOLO settings CLI commands such as reset and updating individual settings. It should be
-    called when executing a script with arguments related to YOLO settings management.
+    This function processes YOLO_xyz settings CLI commands such as reset and updating individual settings. It should be
+    called when executing a script with arguments related to YOLO_xyz settings management.
 
     Args:
-        args (List[str]): A list of command line arguments for YOLO settings management.
+        args (List[str]): A list of command line arguments for YOLO_xyz settings management.
 
     Examples:
-        >>> handle_yolo_settings(["reset"])  # Reset YOLO settings
-        >>> handle_yolo_settings(["default_cfg_path=yolo11n.yaml"])  # Update a specific setting
+        >>> handle_yolo_settings(["reset"])  # Reset YOLO_xyz settings
+        >>> handle_yolo_settings(["default_cfg_path=yolov8n.yaml"])  # Update a specific setting
 
     Notes:
         - If no arguments are provided, the function will display the current settings.
@@ -525,14 +525,14 @@ def handle_yolo_settings(args: List[str]) -> None:
         - Other arguments are treated as key-value pairs to update specific settings.
         - The function will check for alignment between the provided settings and the existing ones.
         - After processing, the updated settings will be displayed.
-        - For more information on handling YOLO settings, visit:
+        - For more information on handling YOLO_xyz settings, visit:
           https://docs.ultralytics.com/quickstart/#ultralytics-settings
     """
     url = "https://docs.ultralytics.com/quickstart/#ultralytics-settings"  # help URL
     try:
         if any(args):
             if args[0] == "reset":
-                SETTINGS_FILE.unlink()  # delete the settings file
+                SETTINGS_YAML.unlink()  # delete the settings file
                 SETTINGS.reset()  # create new settings
                 LOGGER.info("Settings reset successfully")  # inform the user that settings have been reset
             else:  # save a new setting
@@ -540,8 +540,8 @@ def handle_yolo_settings(args: List[str]) -> None:
                 check_dict_alignment(SETTINGS, new)
                 SETTINGS.update(new)
 
-        print(SETTINGS)  # print the current settings
-        LOGGER.info(f"💡 Learn more about Ultralytics Settings at {url}")
+        LOGGER.info(f"💡 Learn about settings at {url}")
+        yaml_print(SETTINGS_YAML)  # print the current settings
     except Exception as e:
         LOGGER.warning(f"WARNING ⚠️ settings error: '{e}'. Please see {url} for help.")
 
@@ -557,7 +557,7 @@ def handle_explorer(args: List[str]):
 
     Examples:
         ```bash
-        yolo explorer data=data.yaml model=yolo11n.pt
+        yolo explorer data=data.yaml model=yolov8n.pt
         ```
 
     Notes:
@@ -611,9 +611,9 @@ def parse_key_value_pair(pair: str = "key=value"):
         AssertionError: If the value is missing or empty.
 
     Examples:
-        >>> key, value = parse_key_value_pair("model=yolo11n.pt")
+        >>> key, value = parse_key_value_pair("model=yolov8n.pt")
         >>> print(f"Key: {key}, Value: {value}")
-        Key: model, Value: yolo11n.pt
+        Key: model, Value: yolov8n.pt
 
         >>> key, value = parse_key_value_pair("epochs=100")
         >>> print(f"Key: {key}, Value: {value}")
@@ -686,13 +686,13 @@ def entrypoint(debug=""):
 
     Examples:
         Train a detection model for 10 epochs with an initial learning_rate of 0.01:
-        >>> entrypoint("train data=coco8.yaml model=yolo11n.pt epochs=10 lr0=0.01")
+        >>> entrypoint("train data=coco8.yaml model=yolov8n.pt epochs=10 lr0=0.01")
 
         Predict a YouTube video using a pretrained segmentation model at image size 320:
-        >>> entrypoint("predict model=yolo11n-seg.pt source='https://youtu.be/LNwODJXcvt4' imgsz=320")
+        >>> entrypoint("predict model=yolov8n-seg.pt source='https://youtu.be/LNwODJXcvt4' imgsz=320")
 
         Validate a pretrained detection model at batch-size 1 and image size 640:
-        >>> entrypoint("val model=yolo11n.pt data=coco8.yaml batch=1 imgsz=640")
+        >>> entrypoint("val model=yolov8n.pt data=coco8.yaml batch=1 imgsz=640")
 
     Notes:
         - If no arguments are passed, the function will display the usage help message.
@@ -712,7 +712,6 @@ def entrypoint(debug=""):
         "cfg": lambda: yaml_print(DEFAULT_CFG_PATH),
         "hub": lambda: handle_yolo_hub(args[1:]),
         "login": lambda: handle_yolo_hub(args),
-        "logout": lambda: handle_yolo_hub(args),
         "copy-cfg": copy_default_cfg,
         "explorer": lambda: handle_explorer(args[1:]),
         "streamlit-predict": lambda: handle_streamlit_inference(),
@@ -754,7 +753,7 @@ def entrypoint(debug=""):
             overrides[a] = True  # auto-True for default bool args, i.e. 'yolo show' sets show=True
         elif a in DEFAULT_CFG_DICT:
             raise SyntaxError(
-                f"'{colorstr('red', 'bold', a)}' is a valid YOLO argument but is missing an '=' sign "
+                f"'{colorstr('red', 'bold', a)}' is a valid YOLO_xyz argument but is missing an '=' sign "
                 f"to set its value, i.e. try '{a}={DEFAULT_CFG_DICT[a]}'\n{CLI_HELP_MSG}"
             )
         else:
@@ -782,7 +781,7 @@ def entrypoint(debug=""):
     # Model
     model = overrides.pop("model", DEFAULT_CFG.model)
     if model is None:
-        model = "yolo11n.pt"
+        model = "yolov8n.pt"
         LOGGER.warning(f"WARNING ⚠️ 'model' argument is missing. Using default 'model={model}'.")
     overrides["model"] = model
     stem = Path(model).stem.lower()
@@ -850,13 +849,13 @@ def copy_default_cfg():
     Examples:
         >>> copy_default_cfg()
         # Output: default.yaml copied to /path/to/current/directory/default_copy.yaml
-        # Example YOLO command with this new custom cfg:
+        # Example YOLO_xyz command with this new custom cfg:
         #   yolo cfg='/path/to/current/directory/default_copy.yaml' imgsz=320 batch=8
 
     Notes:
         - The new configuration file is created in the current working directory.
         - After copying, the function prints a message with the new file's location and an example
-          YOLO command demonstrating how to use the new configuration file.
+          YOLO_xyz command demonstrating how to use the new configuration file.
         - This function is useful for users who want to modify the default configuration without
           altering the original file.
     """
@@ -864,10 +863,10 @@ def copy_default_cfg():
     shutil.copy2(DEFAULT_CFG_PATH, new_file)
     LOGGER.info(
         f"{DEFAULT_CFG_PATH} copied to {new_file}\n"
-        f"Example YOLO command with this new custom cfg:\n    yolo cfg='{new_file}' imgsz=320 batch=8"
+        f"Example YOLO_xyz command with this new custom cfg:\n    yolo cfg='{new_file}' imgsz=320 batch=8"
     )
 
 
 if __name__ == "__main__":
-    # Example: entrypoint(debug='yolo predict model=yolo11n.pt')
+    # Example: entrypoint(debug='yolo predict model=yolov8n.pt')
     entrypoint(debug="")

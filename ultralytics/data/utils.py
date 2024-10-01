@@ -1,4 +1,4 @@
-# Ultralytics YOLO 🚀, AGPL-3.0 license
+# Ultralytics YOLO_xyz 🚀, AGPL-3.0 license
 
 import contextlib
 import hashlib
@@ -22,7 +22,7 @@ from ultralytics.utils import (
     LOGGER,
     NUM_THREADS,
     ROOT,
-    SETTINGS_FILE,
+    SETTINGS_YAML,
     TQDM,
     clean_url,
     colorstr,
@@ -284,7 +284,7 @@ def check_det_dataset(dataset, autodownload=True):
                 raise SyntaxError(
                     emojis(f"{dataset} '{k}:' key missing ❌.\n'train' and 'val' are required in all data YAMLs.")
                 )
-            LOGGER.info("WARNING ⚠️ renaming data YAML 'validation' key to 'val' to match YOLO format.")
+            LOGGER.info("WARNING ⚠️ renaming data YAML 'validation' key to 'val' to match YOLO_xyz format.")
             data["val"] = data.pop("validation")  # replace 'validation' key with 'val' key
     if "names" not in data and "nc" not in data:
         raise SyntaxError(emojis(f"{dataset} key missing ❌.\n either 'names' or 'nc' are required in all data YAMLs."))
@@ -324,7 +324,7 @@ def check_det_dataset(dataset, autodownload=True):
             if s and autodownload:
                 LOGGER.warning(m)
             else:
-                m += f"\nNote dataset download directory is '{DATASETS_DIR}'. You can update this in '{SETTINGS_FILE}'"
+                m += f"\nNote dataset download directory is '{DATASETS_DIR}'. You can update this in '{SETTINGS_YAML}'"
                 raise FileNotFoundError(m)
             t = time.time()
             r = None  # success

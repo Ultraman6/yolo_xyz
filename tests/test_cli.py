@@ -1,4 +1,4 @@
-# Ultralytics YOLO 🚀, AGPL-3.0 license
+# Ultralytics YOLO_xyz 🚀, AGPL-3.0 license
 
 import subprocess
 
@@ -21,7 +21,7 @@ def run(cmd):
 
 
 def test_special_modes():
-    """Test various special command-line modes for YOLO functionality."""
+    """Test various special command-line modes for YOLO_xyz functionality."""
     run("yolo help")
     run("yolo checks")
     run("yolo version")
@@ -31,25 +31,25 @@ def test_special_modes():
 
 @pytest.mark.parametrize("task,model,data", TASK_MODEL_DATA)
 def test_train(task, model, data):
-    """Test YOLO training for different tasks, models, and datasets."""
+    """Test YOLO_xyz training for different tasks, models, and datasets."""
     run(f"yolo train {task} model={model} data={data} imgsz=32 epochs=1 cache=disk")
 
 
 @pytest.mark.parametrize("task,model,data", TASK_MODEL_DATA)
 def test_val(task, model, data):
-    """Test YOLO validation process for specified task, model, and data using a shell command."""
+    """Test YOLO_xyz validation process for specified task, model, and data using a shell command."""
     run(f"yolo val {task} model={model} data={data} imgsz=32 save_txt save_json")
 
 
 @pytest.mark.parametrize("task,model,data", TASK_MODEL_DATA)
 def test_predict(task, model, data):
-    """Test YOLO prediction on provided sample assets for specified task and model."""
+    """Test YOLO_xyz prediction on provided sample assets for specified task and model."""
     run(f"yolo predict model={model} source={ASSETS} imgsz=32 save save_crop save_txt")
 
 
 @pytest.mark.parametrize("model", MODELS)
 def test_export(model):
-    """Test exporting a YOLO model to TorchScript format."""
+    """Test exporting a YOLO_xyz model to TorchScript format."""
     run(f"yolo export model={model} format=torchscript imgsz=32")
 
 
@@ -101,7 +101,7 @@ def test_mobilesam():
     model.predict(source, points=[900, 370], labels=[1])
 
     # Predict a segment based on a box prompt
-    model.predict(source, bboxes=[439, 437, 524, 709], save=True)
+    model.predict(source, bboxes=[439, 437, 524, 709])
 
     # Predict all
     # model(source)
@@ -113,6 +113,6 @@ def test_mobilesam():
 @pytest.mark.skipif(not CUDA_IS_AVAILABLE, reason="CUDA is not available")
 @pytest.mark.skipif(CUDA_DEVICE_COUNT < 2, reason="DDP is not available")
 def test_train_gpu(task, model, data):
-    """Test YOLO training on GPU(s) for various tasks and models."""
+    """Test YOLO_xyz training on GPU(s) for various tasks and models."""
     run(f"yolo train {task} model={model} data={data} imgsz=32 epochs=1 device=0")  # single GPU
     run(f"yolo train {task} model={model} data={data} imgsz=32 epochs=1 device=0,1")  # multi GPU

@@ -1,4 +1,4 @@
-# Ultralytics YOLO 🚀, AGPL-3.0 license
+# Ultralytics YOLO_xyz 🚀, AGPL-3.0 license
 
 from copy import copy
 
@@ -40,11 +40,11 @@ class ClassificationTrainer(BaseTrainer):
         super().__init__(cfg, overrides, _callbacks)
 
     def set_model_attributes(self):
-        """Set the YOLO model's class names from the loaded dataset."""
+        """Set the YOLO_xyz model's class names from the loaded dataset."""
         self.model.names = self.data["names"]
 
     def get_model(self, cfg=None, weights=None, verbose=True):
-        """Returns a modified PyTorch model configured for training YOLO."""
+        """Returns a modified PyTorch model configured for training YOLO_xyz."""
         model = ClassificationModel(cfg, nc=self.data["nc"], verbose=verbose and RANK == -1)
         if weights:
             model.load(weights)

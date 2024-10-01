@@ -1,4 +1,4 @@
-# Ultralytics YOLO 🚀, AGPL-3.0 license
+# Ultralytics YOLO_xyz 🚀, AGPL-3.0 license
 
 from pathlib import Path
 
@@ -31,7 +31,7 @@ class OBBValidator(DetectionValidator):
         self.metrics = OBBMetrics(save_dir=self.save_dir, plot=True, on_plot=self.on_plot)
 
     def init_metrics(self, model):
-        """Initialize evaluation metrics for YOLO."""
+        """Initialize evaluation metrics for YOLO_xyz."""
         super().init_metrics(model)
         val = self.data.get(self.args.split, "")  # validation path
         self.is_dota = isinstance(val, str) and "DOTA" in val  # is COCO
@@ -45,7 +45,7 @@ class OBBValidator(DetectionValidator):
             labels=self.lb,
             nc=self.nc,
             multi_label=True,
-            agnostic=self.args.single_cls or self.args.agnostic_nms,
+            agnostic=self.args.single_cls,
             max_det=self.args.max_det,
             rotated=True,
         )
@@ -112,7 +112,7 @@ class OBBValidator(DetectionValidator):
         )  # pred
 
     def pred_to_json(self, predn, filename):
-        """Serialize YOLO predictions to COCO json format."""
+        """Serialize YOLO_xyz predictions to COCO json format."""
         stem = Path(filename).stem
         image_id = int(stem) if stem.isnumeric() else stem
         rbox = torch.cat([predn[:, :4], predn[:, -1:]], dim=-1)
@@ -129,7 +129,7 @@ class OBBValidator(DetectionValidator):
             )
 
     def save_one_txt(self, predn, save_conf, shape, file):
-        """Save YOLO detections to a txt file in normalized coordinates in a specific format."""
+        """Save YOLO_xyz detections to a txt file in normalized coordinates in a specific format."""
         import numpy as np
 
         from ultralytics.engine.results import Results
@@ -145,7 +145,7 @@ class OBBValidator(DetectionValidator):
         ).save_txt(file, save_conf=save_conf)
 
     def eval_json(self, stats):
-        """Evaluates YOLO output in JSON format and returns performance statistics."""
+        """Evaluates YOLO_xyz output in JSON format and returns performance statistics."""
         if self.args.save_json and self.is_dota and len(self.jdict):
             import json
             import re

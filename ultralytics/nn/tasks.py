@@ -1,8 +1,6 @@
-# Ultralytics YOLO 🚀, AGPL-3.0 license
+# Ultralytics YOLO_xyz 🚀, AGPL-3.0 license
 
 import contextlib
-import pickle
-import types
 from copy import deepcopy
 from pathlib import Path
 
@@ -13,7 +11,6 @@ from ultralytics.nn.modules import (
     AIFI,
     C1,
     C2,
-    C2PSA,
     C3,
     C3TR,
     ELAN1,
@@ -29,9 +26,7 @@ from ultralytics.nn.modules import (
     C2f,
     C2fAttn,
     C2fCIB,
-    C2fPSA,
     C3Ghost,
-    C3k2,
     C3x,
     CBFuse,
     CBLinear,
@@ -59,7 +54,7 @@ from ultralytics.nn.modules import (
     SCDown,
     Segment,
     WorldDetect,
-    v10Detect,
+    v10Detect, C2fCIBAttn, Worldv10Detect, v10OBB
 )
 from ultralytics.utils import DEFAULT_CFG_DICT, DEFAULT_CFG_KEYS, LOGGER, colorstr, emojis, yaml_load
 from ultralytics.utils.checks import check_requirements, check_suffix, check_yaml
@@ -69,7 +64,7 @@ from ultralytics.utils.loss import (
     v8DetectionLoss,
     v8OBBLoss,
     v8PoseLoss,
-    v8SegmentationLoss,
+    v8SegmentationLoss, E2EObbLoss, E2EPoseLoss,
 )
 from ultralytics.utils.ops import make_divisible
 from ultralytics.utils.plotting import feature_visualization
@@ -90,7 +85,7 @@ except ImportError:
 
 
 class BaseModel(nn.Module):
-    """The BaseModel class serves as a base class for all the models in the Ultralytics YOLO family."""
+    """The BaseModel class serves as a base class for all the models in the Ultralytics YOLO_xyz family."""
 
     def forward(self, x, *args, **kwargs):
         """
@@ -326,11 +321,17 @@ class DetectionModel(BaseModel):
             s = 256  # 2x min stride
             m.inplace = self.inplace
 
+            # 仅训练推理
             def _forward(x):
                 """Performs a forward pass through the model, handling different Detect subclass types accordingly."""
-                if self.end2end:
-                    return self.forward(x)["one2many"]
-                return self.forward(x)[0] if isinstance(m, (Segment, Pose, OBB)) else self.forward(x)
+                if self.end2end:  # 但在推理时，如何取y？
+                    y = self.forward(x)["one2many"]
+                else:
+                    y = self.forward(x)
+                if isinstance(m, (Segment, Pose, OBB)):
+                    return y[0]
+                else:
+                    return y
 
             m.stride = torch.tensor([s / x.shape[-2] for x in _forward(torch.zeros(1, ch, s, s))])  # forward
             self.stride = m.stride
@@ -373,7 +374,7 @@ class DetectionModel(BaseModel):
         return torch.cat((x, y, wh, cls), dim)
 
     def _clip_augmented(self, y):
-        """Clip YOLO augmented inference tails."""
+        """Clip YOLO_xyz augmented inference tails."""
         nl = self.model[-1].nl  # number of detection layers (P3-P5)
         g = sum(4**x for x in range(nl))  # grid points
         e = 1  # exclude layer count
@@ -397,7 +398,7 @@ class OBBModel(DetectionModel):
 
     def init_criterion(self):
         """Initialize the loss criterion for the model."""
-        return v8OBBLoss(self)
+        return E2EObbLoss(self) if getattr(self, "end2end", False) else v8OBBLoss(self)
 
 
 class SegmentationModel(DetectionModel):
@@ -426,7 +427,7 @@ class PoseModel(DetectionModel):
 
     def init_criterion(self):
         """Initialize the loss criterion for the PoseModel."""
-        return v8PoseLoss(self)
+        return E2EPoseLoss(self) if getattr(self, "end2end", False) else v8PoseLoss(self)
 
 
 class ClassificationModel(BaseModel):
@@ -457,7 +458,7 @@ class ClassificationModel(BaseModel):
     def reshape_outputs(model, nc):
         """Update a TorchVision classification model to class count 'n' if required."""
         name, m = list((model.model if hasattr(model, "model") else model).named_children())[-1]  # last module
-        if isinstance(m, Classify):  # YOLO Classify() head
+        if isinstance(m, Classify):  # YOLO_xyz Classify() head
             if m.linear.out_features != nc:
                 m.linear = nn.Linear(m.linear.in_features, nc)
         elif isinstance(m, nn.Linear):  # ResNet, EfficientNet
@@ -651,14 +652,33 @@ class WorldModel(DetectionModel):
                 x = y[m.f] if isinstance(m.f, int) else [x if j == -1 else y[j] for j in m.f]  # from earlier layers
             if profile:
                 self._profile_one_layer(m, x, dt)
-            if isinstance(m, C2fAttn):
+            if isinstance(m, C2fAttn) or isinstance(m, C2fCIBAttn):
                 x = m(x, txt_feats)
-            elif isinstance(m, WorldDetect):
+            elif isinstance(m, WorldDetect) or isinstance(m, Worldv10Detect):
                 x = m(x, ori_txt_feats)
             elif isinstance(m, ImagePoolingAttn):
                 txt_feats = m(x, txt_feats)
             else:
-                x = m(x)  # run
+                try:
+                    x = m(x)  # 尝试运行
+                except Exception as e:
+                    # 捕获异常并打印详细的错误信息，包括m的类型和异常信息
+                    print(f"Error occurred in layer/module: {type(m).__name__}")
+                    print(f"Exception message: {str(e)}")
+                    # 可选择重新抛出异常，或进行其他的处理逻辑
+                    raise
+
+            # if type(x) == list:
+            #     shape = []
+            #     for i in x:
+            #         shape.append(i.shape)
+            # elif type(x) == dict:
+            #     shape = []
+            #     for i in x.values():
+            #         shape.append(i.shape)
+            # else:
+            #     shape = x.shape
+            # print(type(m), type(x), shape)
 
             y.append(x if m.i in self.save else None)  # save output
             if visualize:
@@ -693,7 +713,7 @@ class Ensemble(nn.ModuleList):
         super().__init__()
 
     def forward(self, x, augment=False, profile=False, visualize=False):
-        """Function generates the YOLO network's final layer."""
+        """Function generates the YOLO_xyz network's final layer."""
         y = [module(x, augment, profile, visualize)[0] for module in self]
         # y = torch.stack(y).max(0)[0]  # max ensemble
         # y = torch.stack(y).mean(0)  # mean ensemble
@@ -755,39 +775,7 @@ def temporary_modules(modules=None, attributes=None):
                 del sys.modules[old]
 
 
-class SafeClass:
-    """A placeholder class to replace unknown classes during unpickling."""
-
-    def __init__(self, *args, **kwargs):
-        """Initialize SafeClass instance, ignoring all arguments."""
-        pass
-
-    def __call__(self, *args, **kwargs):
-        """Run SafeClass instance, ignoring all arguments."""
-        pass
-
-
-class SafeUnpickler(pickle.Unpickler):
-    """Custom Unpickler that replaces unknown classes with SafeClass."""
-
-    def find_class(self, module, name):
-        """Attempt to find a class, returning SafeClass if not among safe modules."""
-        safe_modules = (
-            "torch",
-            "collections",
-            "collections.abc",
-            "builtins",
-            "math",
-            "numpy",
-            # Add other modules considered safe
-        )
-        if module in safe_modules:
-            return super().find_class(module, name)
-        else:
-            return SafeClass
-
-
-def torch_safe_load(weight, safe_only=False):
+def torch_safe_load(weight):
     """
     Attempts to load a PyTorch model with the torch.load() function. If a ModuleNotFoundError is raised, it catches the
     error, logs a warning message, and attempts to install the missing module via the check_requirements() function.
@@ -795,18 +783,9 @@ def torch_safe_load(weight, safe_only=False):
 
     Args:
         weight (str): The file path of the PyTorch model.
-        safe_only (bool): If True, replace unknown classes with SafeClass during loading.
-
-    Example:
-    ```python
-    from ultralytics.nn.tasks import torch_safe_load
-
-    ckpt, file = torch_safe_load("path/to/best.pt", safe_only=True)
-    ```
 
     Returns:
-        ckpt (dict): The loaded model checkpoint.
-        file (str): The loaded filename
+        (dict): The loaded PyTorch model.
     """
     from ultralytics.utils.downloads import attempt_download_asset
 
@@ -825,15 +804,7 @@ def torch_safe_load(weight, safe_only=False):
                 "ultralytics.utils.loss.v10DetectLoss": "ultralytics.utils.loss.E2EDetectLoss",  # YOLOv10
             },
         ):
-            if safe_only:
-                # Load via custom pickle module
-                safe_pickle = types.ModuleType("safe_pickle")
-                safe_pickle.Unpickler = SafeUnpickler
-                safe_pickle.load = lambda file_obj: SafeUnpickler(file_obj).load()
-                with open(file, "rb") as f:
-                    ckpt = torch.load(f, pickle_module=safe_pickle)
-            else:
-                ckpt = torch.load(file, map_location="cpu")
+            ckpt = torch.load(file, map_location="cpu")
 
     except ModuleNotFoundError as e:  # e.name is missing module name
         if e.name == "models":
@@ -856,14 +827,14 @@ def torch_safe_load(weight, safe_only=False):
         ckpt = torch.load(file, map_location="cpu")
 
     if not isinstance(ckpt, dict):
-        # File is likely a YOLO instance saved with i.e. torch.save(model, "saved_model.pt")
+        # File is likely a YOLO_xyz instance saved with i.e. torch.save(model, "saved_model.pt")
         LOGGER.warning(
             f"WARNING ⚠️ The file '{weight}' appears to be improperly saved or formatted. "
-            f"For optimal results, use model.save('filename.pt') to correctly save YOLO models."
+            f"For optimal results, use model.save('filename.pt') to correctly save YOLO_xyz models."
         )
         ckpt = {"model": ckpt.model}
 
-    return ckpt, file
+    return ckpt, file  # load
 
 
 def attempt_load_weights(weights, device=None, inplace=True, fuse=False):
@@ -931,7 +902,7 @@ def attempt_load_one_weight(weight, device=None, inplace=True, fuse=False):
 
 
 def parse_model(d, ch, verbose=True):  # model_dict, input_channels(3)
-    """Parse a YOLO model.yaml dictionary into a PyTorch model."""
+    """Parse a YOLO_xyz model.yaml dictionary into a PyTorch model."""
     import ast
 
     # Args
@@ -971,15 +942,12 @@ def parse_model(d, ch, verbose=True):  # model_dict, input_channels(3)
             GhostBottleneck,
             SPP,
             SPPF,
-            C2fPSA,
-            C2PSA,
             DWConv,
             Focus,
             BottleneckCSP,
             C1,
             C2,
             C2f,
-            C3k2,
             RepNCSPELAN4,
             ELAN1,
             ADown,
@@ -996,37 +964,28 @@ def parse_model(d, ch, verbose=True):  # model_dict, input_channels(3)
             PSA,
             SCDown,
             C2fCIB,
+            C2fCIBAttn
         }:
+            # if m is C2fAttn:
+            #     print(args)
             c1, c2 = ch[f], args[0]
             if c2 != nc:  # if c2 not equal to number of classes (i.e. for Classify() output)
                 c2 = make_divisible(min(c2, max_channels) * width, 8)
-            if m is C2fAttn:
+
+            if m in {C2fAttn, C2fCIBAttn}:
                 args[1] = make_divisible(min(args[1], max_channels // 2) * width, 8)  # embed channels
                 args[2] = int(
                     max(round(min(args[2], max_channels // 2 // 32)) * width, 1) if args[2] > 1 else args[2]
                 )  # num heads
 
             args = [c1, c2, *args[1:]]
-            if m in {
-                BottleneckCSP,
-                C1,
-                C2,
-                C2f,
-                C3k2,
-                C2fAttn,
-                C3,
-                C3TR,
-                C3Ghost,
-                C3x,
-                RepC3,
-                C2fPSA,
-                C2fCIB,
-                C2PSA,
-            }:
+            # if m is C2fAttn:
+            #     print(args)
+            if m in {BottleneckCSP, C1, C2, C2f, C2fAttn, C3, C3TR, C3Ghost, C3x, RepC3, C2fCIB, C2fCIBAttn}:
                 args.insert(2, n)  # number of repeats
                 n = 1
-            if m is C3k2 and scale in "mlx":  # for M/L/X sizes
-                args[3] = True
+            # if m is C2fAttn:
+            #     print(args)
         elif m is AIFI:
             args = [ch[f], *args]
         elif m in {HGStem, HGBlock}:
@@ -1041,7 +1000,8 @@ def parse_model(d, ch, verbose=True):  # model_dict, input_channels(3)
             args = [ch[f]]
         elif m is Concat:
             c2 = sum(ch[x] for x in f)
-        elif m in {Detect, WorldDetect, Segment, Pose, OBB, ImagePoolingAttn, v10Detect}:
+        elif m in {Detect, WorldDetect, Segment, Pose, OBB, v10OBB,
+                   ImagePoolingAttn, v10Detect, Worldv10Detect}:
             args.append([ch[x] for x in f])
             if m is Segment:
                 args[2] = make_divisible(min(args[2], max_channels) * width, 8)
@@ -1055,7 +1015,8 @@ def parse_model(d, ch, verbose=True):  # model_dict, input_channels(3)
             c2 = ch[f[-1]]
         else:
             c2 = ch[f]
-
+        if m in {OBB,v10OBB}:
+            print(args,n)
         m_ = nn.Sequential(*(m(*args) for _ in range(n))) if n > 1 else m(*args)  # module
         t = str(m)[8:-2].replace("__main__.", "")  # module type
         m.np = sum(x.numel() for x in m_.parameters())  # number params
@@ -1077,7 +1038,7 @@ def yaml_model_load(path):
     path = Path(path)
     if path.stem in (f"yolov{d}{x}6" for x in "nsmlx" for d in (5, 8)):
         new_stem = re.sub(r"(\d+)([nslmx])6(.+)?$", r"\1\2-p6\3", path.stem)
-        LOGGER.warning(f"WARNING ⚠️ Ultralytics YOLO P6 models now use -p6 suffix. Renaming {path.stem} to {new_stem}.")
+        LOGGER.warning(f"WARNING ⚠️ Ultralytics YOLO_xyz P6 models now use -p6 suffix. Renaming {path.stem} to {new_stem}.")
         path = path.with_name(new_stem + path.suffix)
 
     unified_path = re.sub(r"(\d+)([nslmx])(.+)?$", r"\1\3", str(path))  # i.e. yolov8x.yaml -> yolov8.yaml
@@ -1090,12 +1051,12 @@ def yaml_model_load(path):
 
 def guess_model_scale(model_path):
     """
-    Takes a path to a YOLO model's YAML file as input and extracts the size character of the model's scale. The function
+    Takes a path to a YOLO_xyz model's YAML file as input and extracts the size character of the model's scale. The function
     uses regular expression matching to find the pattern of the model scale in the YAML file name, which is denoted by
     n, s, m, l, or x. The function returns the size character of the model scale as a string.
 
     Args:
-        model_path (str | Path): The path to the YOLO model's YAML file.
+        model_path (str | Path): The path to the YOLO_xyz model's YAML file.
 
     Returns:
         (str): The size character of the model's scale, which can be n, s, m, l, or x.
@@ -1103,7 +1064,7 @@ def guess_model_scale(model_path):
     with contextlib.suppress(AttributeError):
         import re
 
-        return re.search(r"yolo[v]?\d+([nslmx])", Path(model_path).stem).group(1)  # n, s, m, l, or x
+        return re.search(r"yolov\d+([nslmx])", Path(model_path).stem).group(1)  # n, s, m, l, or x
     return ""
 
 
@@ -1124,6 +1085,7 @@ def guess_model_task(model):
     def cfg2task(cfg):
         """Guess from YAML dictionary."""
         m = cfg["head"][-1][-2].lower()  # output module name
+
         if m in {"classify", "classifier", "cls", "fc"}:
             return "classify"
         if "detect" in m:
@@ -1132,7 +1094,7 @@ def guess_model_task(model):
             return "segment"
         if m == "pose":
             return "pose"
-        if m == "obb":
+        if "obb" in m:
             return "obb"
 
     # Guess from model cfg
@@ -1156,9 +1118,9 @@ def guess_model_task(model):
                 return "classify"
             elif isinstance(m, Pose):
                 return "pose"
-            elif isinstance(m, OBB):
+            elif isinstance(m, (OBB, v10OBB)):
                 return "obb"
-            elif isinstance(m, (Detect, WorldDetect, v10Detect)):
+            elif isinstance(m, (Detect, WorldDetect, v10Detect, Worldv10Detect)):
                 return "detect"
 
     # Guess from model filename

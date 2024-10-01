@@ -1,4 +1,4 @@
-# Ultralytics YOLO 🚀, AGPL-3.0 license
+# Ultralytics YOLO_xyz 🚀, AGPL-3.0 license
 """
 Check a model's accuracy on a test or val split of a dataset.
 
@@ -110,8 +110,7 @@ class BaseValidator:
         if self.training:
             self.device = trainer.device
             self.data = trainer.data
-            # force FP16 val during training
-            self.args.half = self.device.type != "cpu" and trainer.amp
+            self.args.half = self.device.type != "cpu"  # force FP16 val during training
             model = trainer.ema.ema or trainer.model
             model = model.half() if self.args.half else model.float()
             # self.model = model
@@ -284,7 +283,7 @@ class BaseValidator:
         return preds
 
     def init_metrics(self, model):
-        """Initialize performance metrics for the YOLO model."""
+        """Initialize performance metrics for the YOLO_xyz model."""
         pass
 
     def update_metrics(self, preds, batch):
@@ -308,12 +307,12 @@ class BaseValidator:
         pass
 
     def get_desc(self):
-        """Get description of the YOLO model."""
+        """Get description of the YOLO_xyz model."""
         pass
 
     @property
     def metric_keys(self):
-        """Returns the metric keys used in YOLO training/validation."""
+        """Returns the metric keys used in YOLO_xyz training/validation."""
         return []
 
     def on_plot(self, name, data=None):
@@ -326,7 +325,7 @@ class BaseValidator:
         pass
 
     def plot_predictions(self, batch, preds, ni):
-        """Plots YOLO model predictions on batch images."""
+        """Plots YOLO_xyz model predictions on batch images."""
         pass
 
     def pred_to_json(self, preds, batch):

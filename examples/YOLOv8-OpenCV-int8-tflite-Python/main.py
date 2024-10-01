@@ -1,4 +1,4 @@
-# Ultralytics YOLO 🚀, AGPL-3.0 license
+# Ultralytics YOLO_xyz 🚀, AGPL-3.0 license
 
 import argparse
 
@@ -15,7 +15,7 @@ img_height = 640
 
 
 class LetterBox:
-    """Resizes and reshapes images while maintaining aspect ratio by adding padding, suitable for YOLO models."""
+    """Resizes and reshapes images while maintaining aspect ratio by adding padding, suitable for YOLO_xyz models."""
 
     def __init__(
         self, new_shape=(img_width, img_height), auto=False, scaleFill=False, scaleup=True, center=True, stride=32

@@ -1,4 +1,4 @@
-# Ultralytics YOLO 🚀, AGPL-3.0 license
+# Ultralytics YOLO_xyz 🚀, AGPL-3.0 license
 
 from pathlib import Path
 
@@ -69,13 +69,13 @@ class PoseValidator(DetectionValidator):
             self.args.iou,
             labels=self.lb,
             multi_label=True,
-            agnostic=self.args.single_cls or self.args.agnostic_nms,
+            agnostic=self.args.single_cls,
             max_det=self.args.max_det,
             nc=self.nc,
         )
 
     def init_metrics(self, model):
-        """Initiate pose estimation metrics for YOLO model."""
+        """Initiate pose estimation metrics for YOLO_xyz model."""
         super().init_metrics(model)
         self.kpt_shape = self.data["kpt_shape"]
         is_pose = self.kpt_shape == [17, 3]
@@ -211,7 +211,7 @@ class PoseValidator(DetectionValidator):
         )
 
     def plot_predictions(self, batch, preds, ni):
-        """Plots predictions for YOLO model."""
+        """Plots predictions for YOLO_xyz model."""
         pred_kpts = torch.cat([p[:, 6:].view(-1, *self.kpt_shape) for p in preds], 0)
         plot_images(
             batch["img"],
@@ -224,7 +224,7 @@ class PoseValidator(DetectionValidator):
         )  # pred
 
     def save_one_txt(self, predn, pred_kpts, save_conf, shape, file):
-        """Save YOLO detections to a txt file in normalized coordinates in a specific format."""
+        """Save YOLO_xyz detections to a txt file in normalized coordinates in a specific format."""
         from ultralytics.engine.results import Results
 
         Results(
@@ -236,7 +236,7 @@ class PoseValidator(DetectionValidator):
         ).save_txt(file, save_conf=save_conf)
 
     def pred_to_json(self, predn, filename):
-        """Converts YOLO predictions to COCO JSON format."""
+        """Converts YOLO_xyz predictions to COCO JSON format."""
         stem = Path(filename).stem
         image_id = int(stem) if stem.isnumeric() else stem
         box = ops.xyxy2xywh(predn[:, :4])  # xywh

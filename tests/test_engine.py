@@ -1,4 +1,4 @@
-# Ultralytics YOLO 🚀, AGPL-3.0 license
+# Ultralytics YOLO_xyz 🚀, AGPL-3.0 license
 
 import sys
 from unittest import mock
@@ -12,7 +12,7 @@ from ultralytics.utils import ASSETS, DEFAULT_CFG, WEIGHTS_DIR
 
 
 def test_func(*args):  # noqa
-    """Test function callback for evaluating YOLO model performance metrics."""
+    """Test function callback for evaluating YOLO_xyz model performance metrics."""
     print("callback test passed")
 
 
@@ -21,13 +21,13 @@ def test_export():
     exporter = Exporter()
     exporter.add_callback("on_export_start", test_func)
     assert test_func in exporter.callbacks["on_export_start"], "callback test failed"
-    f = exporter(model=YOLO("yolo11n.yaml").model)
+    f = exporter(model=YOLO("yolov8n.yaml").model)
     YOLO(f)(ASSETS)  # exported model inference
 
 
 def test_detect():
-    """Test YOLO object detection training, validation, and prediction functionality."""
-    overrides = {"data": "coco8.yaml", "model": "yolo11n.yaml", "imgsz": 32, "epochs": 1, "save": False}
+    """Test YOLO_xyz object detection training, validation, and prediction functionality."""
+    overrides = {"data": "coco8.yaml", "model": "yolov8n.yaml", "imgsz": 32, "epochs": 1, "save": False}
     cfg = get_cfg(DEFAULT_CFG)
     cfg.data = "coco8.yaml"
     cfg.imgsz = 32
@@ -65,12 +65,12 @@ def test_detect():
 
 
 def test_segment():
-    """Tests image segmentation training, validation, and prediction pipelines using YOLO models."""
-    overrides = {"data": "coco8-seg.yaml", "model": "yolo11n-seg.yaml", "imgsz": 32, "epochs": 1, "save": False}
+    """Tests image segmentation training, validation, and prediction pipelines using YOLO_xyz models."""
+    overrides = {"data": "coco8-seg.yaml", "model": "yolov8n-seg.yaml", "imgsz": 32, "epochs": 1, "save": False}
     cfg = get_cfg(DEFAULT_CFG)
     cfg.data = "coco8-seg.yaml"
     cfg.imgsz = 32
-    # YOLO(CFG_SEG).train(**overrides)  # works
+    # YOLO_xyz(CFG_SEG).train(**overrides)  # works
 
     # Trainer
     trainer = segment.SegmentationTrainer(overrides=overrides)
@@ -88,7 +88,7 @@ def test_segment():
     pred = segment.SegmentationPredictor(overrides={"imgsz": [64, 64]})
     pred.add_callback("on_predict_start", test_func)
     assert test_func in pred.callbacks["on_predict_start"], "callback test failed"
-    result = pred(source=ASSETS, model=WEIGHTS_DIR / "yolo11n-seg.pt")
+    result = pred(source=ASSETS, model=WEIGHTS_DIR / "yolov8n-seg.pt")
     assert len(result), "predictor test failed"
 
     # Test resume
@@ -105,11 +105,11 @@ def test_segment():
 
 def test_classify():
     """Test image classification including training, validation, and prediction phases."""
-    overrides = {"data": "imagenet10", "model": "yolo11n-cls.yaml", "imgsz": 32, "epochs": 1, "save": False}
+    overrides = {"data": "imagenet10", "model": "yolov8n-cls.yaml", "imgsz": 32, "epochs": 1, "save": False}
     cfg = get_cfg(DEFAULT_CFG)
     cfg.data = "imagenet10"
     cfg.imgsz = 32
-    # YOLO(CFG_SEG).train(**overrides)  # works
+    # YOLO_xyz(CFG_SEG).train(**overrides)  # works
 
     # Trainer
     trainer = classify.ClassificationTrainer(overrides=overrides)

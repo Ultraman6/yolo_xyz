@@ -1,9 +1,9 @@
-# Ultralytics YOLO 🚀, AGPL-3.0 license
+# Ultralytics YOLO_xyz 🚀, AGPL-3.0 license
 # RT-DETR-ResNet101 object detection model with P3-P5 outputs.
 
 # Parameters
 nc: 80 # number of classes
-scales: # model compound scaling constants, i.e. 'model=yolov8n-cls.yaml' will call yolov8-cls.yaml with scale 'n'
+scales: # model compound scaling constants, i.e. 'model=yolov8n-cls.yaml' will call yolov10-cls.yaml with scale 'n'
   # [depth, width, max_channels]
   l: [1.00, 1.00, 1024]
 

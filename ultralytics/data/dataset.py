@@ -1,4 +1,4 @@
-# Ultralytics YOLO 🚀, AGPL-3.0 license
+# Ultralytics YOLO_xyz 🚀, AGPL-3.0 license
 
 import contextlib
 import json
@@ -45,7 +45,7 @@ DATASET_CACHE_VERSION = "1.0.3"
 
 class YOLODataset(BaseDataset):
     """
-    Dataset class for loading object detection and/or segmentation labels in YOLO format.
+    Dataset class for loading object detection and/or segmentation labels in YOLO_xyz format.
 
     Args:
         data (dict, optional): A dataset YAML dictionary. Defaults to None.
@@ -132,7 +132,7 @@ class YOLODataset(BaseDataset):
         return x
 
     def get_labels(self):
-        """Returns dictionary of labels for YOLO training."""
+        """Returns dictionary of labels for YOLO_xyz training."""
         self.label_files = img2label_paths(self.im_files)
         cache_path = Path(self.label_files[0]).parent.with_suffix(".cache")
         try:
@@ -249,7 +249,7 @@ class YOLODataset(BaseDataset):
 
 class YOLOMultiModalDataset(YOLODataset):
     """
-    Dataset class for loading object detection and/or segmentation labels in YOLO format.
+    Dataset class for loading object detection and/or segmentation labels in YOLO_xyz format.
 
     Args:
         data (dict, optional): A dataset YAML dictionary. Defaults to None.
@@ -280,7 +280,7 @@ class YOLOMultiModalDataset(YOLODataset):
 
 
 class GroundingDataset(YOLODataset):
-    """Handles object detection tasks by loading annotations from a specified JSON file, supporting YOLO format."""
+    """Handles object detection tasks by loading annotations from a specified JSON file, supporting YOLO_xyz format."""
 
     def __init__(self, *args, task="detect", json_file, **kwargs):
         """Initializes a GroundingDataset for object detection, loading annotations from a specified JSON file."""
@@ -386,7 +386,7 @@ class SemanticDataset(BaseDataset):
 
 class ClassificationDataset:
     """
-    Extends torchvision ImageFolder to support YOLO classification tasks, offering functionalities like image
+    Extends torchvision ImageFolder to support YOLO_xyz classification tasks, offering functionalities like image
     augmentation, caching, and verification. It's designed to efficiently handle large datasets for training deep
     learning models, with optional image transformations and caching mechanisms to speed up training.
 
@@ -404,7 +404,7 @@ class ClassificationDataset:
 
     def __init__(self, root, args, augment=False, prefix=""):
         """
-        Initialize YOLO object with root, image size, augmentations, and cache settings.
+        Initialize YOLO_xyz object with root, image size, augmentations, and cache settings.
 
         Args:
             root (str): Path to the dataset directory where images are stored in a class-specific folder structure.

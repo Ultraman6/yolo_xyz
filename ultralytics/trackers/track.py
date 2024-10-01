@@ -1,4 +1,4 @@
-# Ultralytics YOLO 🚀, AGPL-3.0 license
+# Ultralytics YOLO_xyz 🚀, AGPL-3.0 license
 
 from functools import partial
 from pathlib import Path
@@ -96,7 +96,7 @@ def register_tracker(model: object, persist: bool) -> None:
         persist (bool): Whether to persist the trackers if they already exist.
 
     Examples:
-        Register tracking callbacks to a YOLO model
+        Register tracking callbacks to a YOLO_xyz model
         >>> model = YOLOModel()
         >>> register_tracker(model, persist=True)
     """

@@ -1,18 +1,18 @@
-# Ultralytics YOLO 🚀, AGPL-3.0 license
+# Ultralytics YOLO_xyz 🚀, AGPL-3.0 license
 """
-Module provides functionalities for hyperparameter tuning of the Ultralytics YOLO models for object detection, instance
+Module provides functionalities for hyperparameter tuning of the Ultralytics YOLO_xyz models for object detection, instance
 segmentation, image classification, pose estimation, and multi-object tracking.
 
 Hyperparameter tuning is the process of systematically searching for the optimal set of hyperparameters
-that yield the best model performance. This is particularly crucial in deep learning models like YOLO,
+that yield the best model performance. This is particularly crucial in deep learning models like YOLO_xyz,
 where small changes in hyperparameters can lead to significant differences in model accuracy and efficiency.
 
 Example:
     Tune hyperparameters for YOLOv8n on COCO8 at imgsz=640 and epochs=30 for 300 tuning iterations.
     ```python
-    from ultralytics import YOLO
+    from ultralytics import YOLO_xyz
 
-    model = YOLO("yolov8n.pt")
+    model = YOLO_xyz("yolov8n.pt")
     model.tune(data="coco8.yaml", epochs=10, iterations=300, optimizer="AdamW", plots=False, save=False, val=False)
     ```
 """
@@ -32,9 +32,9 @@ from ultralytics.utils.plotting import plot_tune_results
 
 class Tuner:
     """
-    Class responsible for hyperparameter tuning of YOLO models.
+    Class responsible for hyperparameter tuning of YOLO_xyz models.
 
-    The class evolves YOLO model hyperparameters over a given number of iterations
+    The class evolves YOLO_xyz model hyperparameters over a given number of iterations
     by mutating them according to the search space and retraining the model to evaluate their performance.
 
     Attributes:
@@ -52,17 +52,17 @@ class Tuner:
     Example:
         Tune hyperparameters for YOLOv8n on COCO8 at imgsz=640 and epochs=30 for 300 tuning iterations.
         ```python
-        from ultralytics import YOLO
+        from ultralytics import YOLO_xyz
 
-        model = YOLO("yolov8n.pt")
+        model = YOLO_xyz("yolov8n.pt")
         model.tune(data="coco8.yaml", epochs=10, iterations=300, optimizer="AdamW", plots=False, save=False, val=False)
         ```
 
         Tune with custom search space.
         ```python
-        from ultralytics import YOLO
+        from ultralytics import YOLO_xyz
 
-        model = YOLO("yolov8n.pt")
+        model = YOLO_xyz("yolov8n.pt")
         model.tune(space={key1: val1, key2: val2})  # custom search space dictionary
         ```
     """
@@ -164,11 +164,11 @@ class Tuner:
         This method iterates through the number of iterations, performing the following steps in each iteration:
         1. Load the existing hyperparameters or initialize new ones.
         2. Mutate the hyperparameters using the `mutate` method.
-        3. Train a YOLO model with the mutated hyperparameters.
+        3. Train a YOLO_xyz model with the mutated hyperparameters.
         4. Log the fitness score and mutated hyperparameters to a CSV file.
 
         Args:
-           model (Model): A pre-initialized YOLO model to be used for training.
+           model (Model): A pre-initialized YOLO_xyz model to be used for training.
            iterations (int): The number of generations to run the evolution for.
            cleanup (bool): Whether to delete iteration weights to reduce storage space used during tuning.
 
@@ -189,7 +189,7 @@ class Tuner:
             save_dir = get_save_dir(get_cfg(train_args))
             weights_dir = save_dir / "weights"
             try:
-                # Train YOLO model with mutated hyperparameters (run in subprocess to avoid dataloader hang)
+                # Train YOLO_xyz model with mutated hyperparameters (run in subprocess to avoid dataloader hang)
                 cmd = ["yolo", "train", *(f"{k}={v}" for k, v in train_args.items())]
                 return_code = subprocess.run(cmd, check=True).returncode
                 ckpt_file = weights_dir / ("best.pt" if (weights_dir / "best.pt").exists() else "last.pt")

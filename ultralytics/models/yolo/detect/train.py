@@ -1,4 +1,4 @@
-# Ultralytics YOLO 🚀, AGPL-3.0 license
+# Ultralytics YOLO_xyz 🚀, AGPL-3.0 license
 
 import math
 import random
@@ -32,7 +32,7 @@ class DetectionTrainer(BaseTrainer):
 
     def build_dataset(self, img_path, mode="train", batch=None):
         """
-        Build YOLO Dataset.
+        Build YOLO_xyz Dataset.
 
         Args:
             img_path (str): Path to the folder containing images.
@@ -84,14 +84,14 @@ class DetectionTrainer(BaseTrainer):
         # TODO: self.model.class_weights = labels_to_class_weights(dataset.labels, nc).to(device) * nc
 
     def get_model(self, cfg=None, weights=None, verbose=True):
-        """Return a YOLO detection model."""
+        """Return a YOLO_xyz detection model."""
         model = DetectionModel(cfg, nc=self.data["nc"], verbose=verbose and RANK == -1)
         if weights:
             model.load(weights)
         return model
 
     def get_validator(self):
-        """Returns a DetectionValidator for YOLO model validation."""
+        """Returns a DetectionValidator for YOLO_xyz model validation."""
         self.loss_names = "box_loss", "cls_loss", "dfl_loss"
         return yolo.detect.DetectionValidator(
             self.test_loader, save_dir=self.save_dir, args=copy(self.args), _callbacks=self.callbacks
@@ -137,7 +137,7 @@ class DetectionTrainer(BaseTrainer):
         plot_results(file=self.csv, on_plot=self.on_plot)  # save results.png
 
     def plot_training_labels(self):
-        """Create a labeled training plot of the YOLO model."""
+        """Create a labeled training plot of the YOLO_xyz model."""
         boxes = np.concatenate([lb["bboxes"] for lb in self.train_loader.dataset.labels], 0)
         cls = np.concatenate([lb["cls"] for lb in self.train_loader.dataset.labels], 0)
         plot_labels(boxes, cls.squeeze(), names=self.data["names"], save_dir=self.save_dir, on_plot=self.on_plot)

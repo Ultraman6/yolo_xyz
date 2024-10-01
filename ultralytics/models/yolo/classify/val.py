@@ -1,4 +1,4 @@
-# Ultralytics YOLO 🚀, AGPL-3.0 license
+# Ultralytics YOLO_xyz 🚀, AGPL-3.0 license
 
 import torch
 
@@ -86,7 +86,7 @@ class ClassificationValidator(BaseValidator):
         return build_dataloader(dataset, batch_size, self.args.workers, rank=-1)
 
     def print_results(self):
-        """Prints evaluation metrics for YOLO object detection model."""
+        """Prints evaluation metrics for YOLO_xyz object detection model."""
         pf = "%22s" + "%11.3g" * len(self.metrics.keys)  # print format
         LOGGER.info(pf % ("all", self.metrics.top1, self.metrics.top5))
 

@@ -1,4 +1,4 @@
-# Ultralytics YOLO 🚀, AGPL-3.0 license
+# Ultralytics YOLO_xyz 🚀, AGPL-3.0 license
 
 from multiprocessing.pool import ThreadPool
 from pathlib import Path
@@ -69,14 +69,14 @@ class SegmentationValidator(DetectionValidator):
         )
 
     def postprocess(self, preds):
-        """Post-processes YOLO predictions and returns output detections with proto."""
+        """Post-processes YOLO_xyz predictions and returns output detections with proto."""
         p = ops.non_max_suppression(
             preds[0],
             self.args.conf,
             self.args.iou,
             labels=self.lb,
             multi_label=True,
-            agnostic=self.args.single_cls or self.args.agnostic_nms,
+            agnostic=self.args.single_cls,
             max_det=self.args.max_det,
             nc=self.nc,
         )
@@ -244,7 +244,7 @@ class SegmentationValidator(DetectionValidator):
         self.plot_masks.clear()
 
     def save_one_txt(self, predn, pred_masks, save_conf, shape, file):
-        """Save YOLO detections to a txt file in normalized coordinates in a specific format."""
+        """Save YOLO_xyz detections to a txt file in normalized coordinates in a specific format."""
         from ultralytics.engine.results import Results
 
         Results(

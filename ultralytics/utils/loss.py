@@ -1,4 +1,4 @@
-# Ultralytics YOLO 🚀, AGPL-3.0 license
+# Ultralytics YOLO_xyz 🚀, AGPL-3.0 license
 
 import torch
 import torch.nn as nn
@@ -98,7 +98,7 @@ class BboxLoss(nn.Module):
 
     def forward(self, pred_dist, pred_bboxes, anchor_points, target_bboxes, target_scores, target_scores_sum, fg_mask):
         """IoU loss."""
-        weight = target_scores.sum(-1)[fg_mask].unsqueeze(-1)
+        weight = target_scores.sum(-1)[fg_mask].unsqueeze(-1)  # 普通框、部分损失（位置距离）
         iou = bbox_iou(pred_bboxes[fg_mask], target_bboxes[fg_mask], xywh=False, CIoU=True)
         loss_iou = ((1.0 - iou) * weight).sum() / target_scores_sum
 
@@ -112,7 +112,7 @@ class BboxLoss(nn.Module):
 
         return loss_iou, loss_dfl
 
-
+# 选装框也只是选装，框还是矩形，仅需两点表示
 class RotatedBboxLoss(BboxLoss):
     """Criterion class for computing training losses during training."""
 
@@ -122,7 +122,7 @@ class RotatedBboxLoss(BboxLoss):
 
     def forward(self, pred_dist, pred_bboxes, anchor_points, target_bboxes, target_scores, target_scores_sum, fg_mask):
         """IoU loss."""
-        weight = target_scores.sum(-1)[fg_mask].unsqueeze(-1)
+        weight = target_scores.sum(-1)[fg_mask].unsqueeze(-1)   # 普通框、完整损失（位置距离、形状差异）
         iou = probiou(pred_bboxes[fg_mask], target_bboxes[fg_mask])
         loss_iou = ((1.0 - iou) * weight).sum() / target_scores_sum
 
@@ -228,11 +228,8 @@ class v8DetectionLoss:
 
         # Pboxes
         pred_bboxes = self.bbox_decode(anchor_points, pred_distri)  # xyxy, (b, h*w, 4)
-        # dfl_conf = pred_distri.view(batch_size, -1, 4, self.reg_max).detach().softmax(-1)
-        # dfl_conf = (dfl_conf.amax(-1).mean(-1) + dfl_conf.amax(-1).amin(-1)) / 2
 
         _, target_bboxes, target_scores, fg_mask, _ = self.assigner(
-            # pred_scores.detach().sigmoid() * 0.8 + dfl_conf.unsqueeze(-1) * 0.2,
             pred_scores.detach().sigmoid(),
             (pred_bboxes.detach() * stride_tensor).type(gt_bboxes.dtype),
             anchor_points * stride_tensor,
@@ -270,7 +267,7 @@ class v8SegmentationLoss(v8DetectionLoss):
         self.overlap = model.args.overlap_mask
 
     def __call__(self, preds, batch):
-        """Calculate and return the loss for the YOLO model."""
+        """Calculate and return the loss for the YOLO_xyz model."""
         loss = torch.zeros(4, device=self.device)  # box, cls, dfl
         feats, pred_masks, proto = preds if len(preds) == 3 else preds[1]
         batch_size, _, mask_h, mask_w = proto.shape  # batch size, number of masks, mask height, mask width
@@ -447,15 +444,15 @@ class v8SegmentationLoss(v8DetectionLoss):
 class v8PoseLoss(v8DetectionLoss):
     """Criterion class for computing training losses."""
 
-    def __init__(self, model):  # model must be de-paralleled
+    def __init__(self, model, tal_topk=10):  # model must be de-paralleled
         """Initializes v8PoseLoss with model, sets keypoint variables and declares a keypoint loss instance."""
-        super().__init__(model)
+        super().__init__(model, tal_topk)
         self.kpt_shape = model.model[-1].kpt_shape
         self.bce_pose = nn.BCEWithLogitsLoss()
         is_pose = self.kpt_shape == [17, 3]
         nkpt = self.kpt_shape[0]  # number of keypoints
         sigmas = torch.from_numpy(OKS_SIGMA).to(self.device) if is_pose else torch.ones(nkpt, device=self.device) / nkpt
-        self.keypoint_loss = KeypointLoss(sigmas=sigmas)
+        self.keypoint_loss = KeypointLoss(sigmas=sigmas)  # 本身就是argmax损失
 
     def __call__(self, preds, batch):
         """Calculate the total loss and detach it."""
@@ -599,7 +596,6 @@ class v8PoseLoss(v8DetectionLoss):
 
         return kpts_loss, kpts_obj_loss
 
-
 class v8ClassificationLoss:
     """Criterion class for computing training losses."""
 
@@ -611,13 +607,13 @@ class v8ClassificationLoss:
 
 
 class v8OBBLoss(v8DetectionLoss):
-    """Calculates losses for object detection, classification, and box distribution in rotated YOLO models."""
+    """Calculates losses for object detection, classification, and box distribution in rotated YOLO_xyz models."""
 
-    def __init__(self, model):
+    def __init__(self, model, tal_topk=10):
         """Initializes v8OBBLoss with model, assigner, and rotated bbox loss; note model must be de-paralleled."""
-        super().__init__(model)
-        self.assigner = RotatedTaskAlignedAssigner(topk=10, num_classes=self.nc, alpha=0.5, beta=6.0)
-        self.bbox_loss = RotatedBboxLoss(self.reg_max).to(self.device)
+        super().__init__(model, tal_topk=tal_topk)
+        self.assigner = RotatedTaskAlignedAssigner(topk=tal_topk, num_classes=self.nc, alpha=0.5, beta=6.0)
+        self.bbox_loss = RotatedBboxLoss(self.reg_max).to(self.device)  # 替换旋转标签损失
 
     def preprocess(self, targets, batch_size, scale_tensor):
         """Preprocesses the target counts and matches with the input batch size to output a tensor."""
@@ -638,7 +634,7 @@ class v8OBBLoss(v8DetectionLoss):
         return out
 
     def __call__(self, preds, batch):
-        """Calculate and return the loss for the YOLO model."""
+        """Calculate and return the loss for the YOLO_xyz model."""
         loss = torch.zeros(3, device=self.device)  # box, cls, dfl
         feats, pred_angle = preds if isinstance(preds[0], list) else preds[1]
         batch_size = pred_angle.shape[0]  # batch size, number of masks, mask height, mask width
@@ -729,11 +725,40 @@ class v8OBBLoss(v8DetectionLoss):
 
 class E2EDetectLoss:
     """Criterion class for computing training losses."""
-
     def __init__(self, model):
         """Initialize E2EDetectLoss with one-to-many and one-to-one detection losses using the provided model."""
         self.one2many = v8DetectionLoss(model, tal_topk=10)
         self.one2one = v8DetectionLoss(model, tal_topk=1)
+
+    def __call__(self, preds, batch):
+        """Calculate the sum of the loss for box, cls and dfl multiplied by batch size."""
+        preds = preds[1] if isinstance(preds, tuple) else preds
+        one2many = preds["one2many"]
+        loss_one2many = self.one2many(one2many, batch)
+        one2one = preds["one2one"]
+        loss_one2one = self.one2one(one2one, batch)
+        return loss_one2many[0] + loss_one2one[0], loss_one2many[1] + loss_one2one[1]
+
+class E2EObbLoss:
+    def __init__(self, model):
+        """Initialize E2EDetectLoss with one-to-many and one-to-one detection losses using the provided model."""
+        self.one2many = v8OBBLoss(model, tal_topk=10)
+        self.one2one = v8OBBLoss(model, tal_topk=1)
+
+    def __call__(self, preds, batch):
+        """Calculate the sum of the loss for box, cls and dfl multiplied by batch size."""
+        preds = preds[1] if isinstance(preds, tuple) else preds
+        one2many = preds["one2many"]
+        loss_one2many = self.one2many(one2many, batch)
+        one2one = preds["one2one"]
+        loss_one2one = self.one2one(one2one, batch)
+        return loss_one2many[0] + loss_one2one[0], loss_one2many[1] + loss_one2one[1]
+
+class E2EPoseLoss:
+    def __init__(self, model):
+        """Initialize E2EDetectLoss with one-to-many and one-to-one detection losses using the provided model."""
+        self.one2many = v8PoseLoss(model, tal_topk=10)
+        self.one2one = v8PoseLoss(model, tal_topk=1)
 
     def __call__(self, preds, batch):
         """Calculate the sum of the loss for box, cls and dfl multiplied by batch size."""

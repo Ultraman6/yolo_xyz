@@ -1,4 +1,4 @@
-# Ultralytics YOLO 🚀, AGPL-3.0 license
+# Ultralytics YOLO_xyz 🚀, AGPL-3.0 license
 
 import itertools
 
@@ -67,7 +67,7 @@ class WorldTrainer(yolo.detect.DetectionTrainer):
 
     def build_dataset(self, img_path, mode="train", batch=None):
         """
-        Build YOLO Dataset.
+        Build YOLO_xyz Dataset.
 
         Args:
             img_path (str): Path to the folder containing images.

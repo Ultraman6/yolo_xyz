@@ -1,4 +1,4 @@
-# Ultralytics YOLO 🚀, AGPL-3.0 license
+# Ultralytics YOLO_xyz 🚀, AGPL-3.0 license
 
 from copy import copy
 
@@ -37,6 +37,6 @@ class OBBTrainer(yolo.detect.DetectionTrainer):
         return model
 
     def get_validator(self):
-        """Return an instance of OBBValidator for validation of YOLO model."""
+        """Return an instance of OBBValidator for validation of YOLO_xyz model."""
         self.loss_names = "box_loss", "cls_loss", "dfl_loss"
         return yolo.obb.OBBValidator(self.test_loader, save_dir=self.save_dir, args=copy(self.args))

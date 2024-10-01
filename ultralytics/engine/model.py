@@ -1,4 +1,4 @@
-# Ultralytics YOLO 🚀, AGPL-3.0 license
+# Ultralytics YOLO_xyz 🚀, AGPL-3.0 license
 
 import inspect
 from pathlib import Path
@@ -28,9 +28,9 @@ from ultralytics.utils import (
 
 class Model(nn.Module):
     """
-    A base class for implementing YOLO models, unifying APIs across different model types.
+    A base class for implementing YOLO_xyz models, unifying APIs across different model types.
 
-    This class provides a common interface for various operations related to YOLO models, such as training,
+    This class provides a common interface for various operations related to YOLO_xyz models, such as training,
     validation, prediction, exporting, and benchmarking. It handles different types of models, including those
     loaded from local files, Ultralytics HUB, or Triton Server.
 
@@ -71,8 +71,8 @@ class Model(nn.Module):
         reset_callbacks: Resets all callbacks to their default functions.
 
     Examples:
-        >>> from ultralytics import YOLO
-        >>> model = YOLO("yolov8n.pt")
+        >>> from ultralytics import YOLO_xyz
+        >>> model = YOLO_xyz("yolov8n.pt")
         >>> results = model.predict("image.jpg")
         >>> model.train(data="coco128.yaml", epochs=3)
         >>> metrics = model.val()
@@ -86,7 +86,7 @@ class Model(nn.Module):
         verbose: bool = False,
     ) -> None:
         """
-        Initializes a new instance of the YOLO model class.
+        Initializes a new instance of the YOLO_xyz model class.
 
         This constructor sets up the model based on the provided model path or name. It handles various types of
         model sources, including local files, Ultralytics HUB models, and Triton Server models. The method
@@ -96,7 +96,7 @@ class Model(nn.Module):
         Args:
             model (Union[str, Path]): Path or name of the model to load or create. Can be a local file path, a
                 model name from Ultralytics HUB, or a Triton Server model.
-            task (str | None): The task type associated with the YOLO model, specifying its application domain.
+            task (str | None): The task type associated with the YOLO_xyz model, specifying its application domain.
             verbose (bool): If True, enables verbose output during the model's initialization and subsequent
                 operations.
 
@@ -127,7 +127,7 @@ class Model(nn.Module):
         # Check if Ultralytics HUB model from https://hub.ultralytics.com
         if self.is_hub_model(model):
             # Fetch model from HUB
-            checks.check_requirements("hub-sdk>=0.0.12")
+            checks.check_requirements("hub-sdk>=0.0.8")
             session = HUBTrainingSession.create_session(model)
             model = session.model_file
             if session.train_args:  # training sent from HUB
@@ -138,7 +138,7 @@ class Model(nn.Module):
             self.model_name = self.model = model
             return
 
-        # Load or create new YOLO model
+        # Load or create new YOLO_xyz model
         if Path(model).suffix in {".yaml", ".yml"}:
             self._new(model, task=task, verbose=verbose)
         else:
@@ -168,7 +168,7 @@ class Model(nn.Module):
                 Results object.
 
         Examples:
-            >>> model = YOLO("yolov8n.pt")
+            >>> model = YOLO_xyz("yolov8n.pt")
             >>> results = model("https://ultralytics.com/images/bus.jpg")
             >>> for r in results:
             ...     print(f"Detected {len(r)} objects in image")
@@ -206,21 +206,33 @@ class Model(nn.Module):
         Check if the provided model is an Ultralytics HUB model.
 
         This static method determines whether the given model string represents a valid Ultralytics HUB model
-        identifier.
+        identifier. It checks for three possible formats: a full HUB URL, an API key and model ID combination,
+        or a standalone model ID.
 
         Args:
-            model (str): The model string to check.
+            model (str): The model identifier to check. This can be a URL, an API key and model ID
+                combination, or a standalone model ID.
 
         Returns:
             (bool): True if the model is a valid Ultralytics HUB model, False otherwise.
 
         Examples:
-            >>> Model.is_hub_model("https://hub.ultralytics.com/models/MODEL")
+            >>> Model.is_hub_model("https://hub.ultralytics.com/models/example_model")
             True
-            >>> Model.is_hub_model("yolov8n.pt")
+            >>> Model.is_hub_model("api_key_example_model_id")
+            True
+            >>> Model.is_hub_model("example_model_id")
+            True
+            >>> Model.is_hub_model("not_a_hub_model.pt")
             False
         """
-        return model.startswith(f"{HUB_WEB_ROOT}/models/")
+        return any(
+            (
+                model.startswith(f"{HUB_WEB_ROOT}/models/"),  # i.e. https://hub.ultralytics.com/models/MODEL_ID
+                [len(x) for x in model.split("_")] == [42, 20],  # APIKEY_MODEL
+                len(model) == 20 and not Path(model).exists() and all(x not in model for x in "./\\"),  # MODEL
+            )
+        )
 
     def _new(self, cfg: str, task=None, model=None, verbose=False) -> None:
         """
@@ -377,7 +389,7 @@ class Model(nn.Module):
         self.model.load(weights)
         return self
 
-    def save(self, filename: Union[str, Path] = "saved_model.pt") -> None:
+    def save(self, filename: Union[str, Path] = "saved_model.pt", use_dill=True) -> None:
         """
         Saves the current model state to a file.
 
@@ -386,6 +398,7 @@ class Model(nn.Module):
 
         Args:
             filename (Union[str, Path]): The name of the file to save the model to.
+            use_dill (bool): Whether to try using dill for serialization if available.
 
         Raises:
             AssertionError: If the model is not a PyTorch model.
@@ -407,7 +420,7 @@ class Model(nn.Module):
             "license": "AGPL-3.0 License (https://ultralytics.com/license)",
             "docs": "https://docs.ultralytics.com",
         }
-        torch.save({**self.ckpt, **updates}, filename)
+        torch.save({**self.ckpt, **updates}, filename, use_dill=use_dill)
 
     def info(self, detailed: bool = False, verbose: bool = True):
         """
@@ -483,7 +496,7 @@ class Model(nn.Module):
             AssertionError: If the model is not a PyTorch model.
 
         Examples:
-            >>> model = YOLO("yolov8n.pt")
+            >>> model = YOLO_xyz("yolov8n.pt")
             >>> image = "https://ultralytics.com/images/bus.jpg"
             >>> embeddings = model.embed(image)
             >>> print(embeddings[0].shape)
@@ -500,7 +513,7 @@ class Model(nn.Module):
         **kwargs,
     ) -> List[Results]:
         """
-        Performs predictions on the given image source using the YOLO model.
+        Performs predictions on the given image source using the YOLO_xyz model.
 
         This method facilitates the prediction process, allowing various configurations through keyword arguments.
         It supports predictions with custom predictors or the default predictor method. The method handles different
@@ -520,7 +533,7 @@ class Model(nn.Module):
                 Results object.
 
         Examples:
-            >>> model = YOLO("yolov8n.pt")
+            >>> model = YOLO_xyz("yolov8n.pt")
             >>> results = model.predict(source="path/to/image.jpg", conf=0.25)
             >>> for r in results:
             ...     print(r.boxes.data)  # print detection bounding boxes
@@ -581,7 +594,7 @@ class Model(nn.Module):
             AttributeError: If the predictor does not have registered trackers.
 
         Examples:
-            >>> model = YOLO("yolov8n.pt")
+            >>> model = YOLO_xyz("yolov8n.pt")
             >>> results = model.track(source="path/to/video.mp4", show=True)
             >>> for r in results:
             ...     print(r.boxes.id)  # print tracking IDs
@@ -624,7 +637,7 @@ class Model(nn.Module):
             AssertionError: If the model is not a PyTorch model.
 
         Examples:
-            >>> model = YOLO("yolov8n.pt")
+            >>> model = YOLO_xyz("yolov8n.pt")
             >>> results = model.val(data="coco128.yaml", imgsz=640)
             >>> print(results.box.map)  # Print mAP50-95
         """
@@ -666,7 +679,7 @@ class Model(nn.Module):
             AssertionError: If the model is not a PyTorch model.
 
         Examples:
-            >>> model = YOLO("yolov8n.pt")
+            >>> model = YOLO_xyz("yolov8n.pt")
             >>> results = model.benchmark(data="coco8.yaml", imgsz=640, half=True)
             >>> print(results)
         """
@@ -716,7 +729,7 @@ class Model(nn.Module):
             RuntimeError: If the export process fails due to errors.
 
         Examples:
-            >>> model = YOLO("yolov8n.pt")
+            >>> model = YOLO_xyz("yolov8n.pt")
             >>> model.export(format="onnx", dynamic=True, simplify=True)
             'path/to/exported/model.onnx'
         """
@@ -771,7 +784,7 @@ class Model(nn.Module):
             ModuleNotFoundError: If the HUB SDK is not installed.
 
         Examples:
-            >>> model = YOLO("yolov8n.pt")
+            >>> model = YOLO_xyz("yolov8n.pt")
             >>> results = model.train(data="coco128.yaml", epochs=3)
         """
         self._check_is_pytorch_model()
@@ -836,7 +849,7 @@ class Model(nn.Module):
             AssertionError: If the model is not a PyTorch model.
 
         Examples:
-            >>> model = YOLO("yolov8n.pt")
+            >>> model = YOLO_xyz("yolov8n.pt")
             >>> results = model.tune(use_ray=True, iterations=20)
             >>> print(results)
         """
@@ -896,7 +909,7 @@ class Model(nn.Module):
             AttributeError: If the model or predictor does not have a 'names' attribute.
 
         Examples:
-            >>> model = YOLO("yolov8n.pt")
+            >>> model = YOLO_xyz("yolov8n.pt")
             >>> print(model.names)
             {0: 'person', 1: 'bicycle', 2: 'car', ...}
         """
@@ -924,7 +937,7 @@ class Model(nn.Module):
             AttributeError: If the model is not a PyTorch nn.Module instance.
 
         Examples:
-            >>> model = YOLO("yolov8n.pt")
+            >>> model = YOLO_xyz("yolov8n.pt")
             >>> print(model.device)
             device(type='cuda', index=0)  # if CUDA is available
             >>> model = model.to("cpu")
@@ -946,7 +959,7 @@ class Model(nn.Module):
             (object | None): The transform object of the model if available, otherwise None.
 
         Examples:
-            >>> model = YOLO("yolov8n.pt")
+            >>> model = YOLO_xyz("yolov8n.pt")
             >>> transforms = model.transforms
             >>> if transforms:
             ...     print(f"Model transforms: {transforms}")
@@ -975,7 +988,7 @@ class Model(nn.Module):
         Examples:
             >>> def on_train_start(trainer):
             ...     print("Training is starting!")
-            >>> model = YOLO("yolov8n.pt")
+            >>> model = YOLO_xyz("yolov8n.pt")
             >>> model.add_callback("on_train_start", on_train_start)
             >>> model.train(data="coco128.yaml", epochs=1)
         """
@@ -994,7 +1007,7 @@ class Model(nn.Module):
                 recognized by the Ultralytics callback system.
 
         Examples:
-            >>> model = YOLO("yolov8n.pt")
+            >>> model = YOLO_xyz("yolov8n.pt")
             >>> model.add_callback("on_train_start", lambda: print("Training started"))
             >>> model.clear_callback("on_train_start")
             >>> # All callbacks for 'on_train_start' are now removed
@@ -1024,7 +1037,7 @@ class Model(nn.Module):
         modifications, ensuring consistent behavior across different runs or experiments.
 
         Examples:
-            >>> model = YOLO("yolov8n.pt")
+            >>> model = YOLO_xyz("yolov8n.pt")
             >>> model.add_callback("on_train_start", custom_function)
             >>> model.reset_callbacks()
             # All callbacks are now reset to their default functions
@@ -1088,6 +1101,8 @@ class Model(nn.Module):
             - The task_map attribute should be properly initialized with the correct mappings for each task.
         """
         try:
+            print(self.task)
+            print(self.task_map)
             return self.task_map[self.task][key]
         except Exception as e:
             name = self.__class__.__name__

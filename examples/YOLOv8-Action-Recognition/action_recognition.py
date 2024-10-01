@@ -1,4 +1,4 @@
-# Ultralytics YOLO 🚀, AGPL-3.0 license
+# Ultralytics YOLO_xyz 🚀, AGPL-3.0 license
 
 import argparse
 import time
@@ -276,10 +276,10 @@ def run(
     labels: List[str] = None,
 ) -> None:
     """
-    Run action recognition on a video source using YOLO for object detection and a video classifier.
+    Run action recognition on a video source using YOLO_xyz for object detection and a video classifier.
 
     Args:
-        weights (str): Path to the YOLO model weights. Defaults to "yolov8n.pt".
+        weights (str): Path to the YOLO_xyz model weights. Defaults to "yolov8n.pt".
         device (str): Device to run the model on. Use 'cuda' for NVIDIA GPU, 'mps' for Apple Silicon, or 'cpu'. Defaults to auto-detection.
         source (str): Path to mp4 video file or YouTube URL. Defaults to a sample YouTube video.
         output_path (Optional[str], optional): Path to save the output video. Defaults to None.
@@ -351,7 +351,7 @@ def run(
 
         frame_counter += 1
 
-        # Run YOLO tracking
+        # Run YOLO_xyz tracking
         results = yolo_model.track(frame, persist=True, classes=[0])  # Track only person class
 
         if results[0].boxes.id is not None:

@@ -1,4 +1,4 @@
-# Ultralytics YOLO 🚀, AGPL-3.0 license
+# Ultralytics YOLO_xyz 🚀, AGPL-3.0 license
 
 import glob
 import math
@@ -147,7 +147,7 @@ class LoadStreams:
         cv2.destroyAllWindows()
 
     def __iter__(self):
-        """Iterates through YOLO image feed and re-opens unresponsive streams."""
+        """Iterates through YOLO_xyz image feed and re-opens unresponsive streams."""
         self.count = -1
         return self
 

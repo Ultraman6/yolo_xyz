@@ -1,4 +1,4 @@
-# Ultralytics YOLO 🚀, AGPL-3.0 license
+# Ultralytics YOLO_xyz 🚀, AGPL-3.0 license
 
 from collections import abc
 from itertools import repeat
@@ -24,7 +24,7 @@ to_2tuple = _ntuple(2)
 to_4tuple = _ntuple(4)
 
 # `xyxy` means left top and right bottom
-# `xywh` means center x, center y and width, height(YOLO format)
+# `xywh` means center x, center y and width, height(YOLO_xyz format)
 # `ltwh` means left top and width, height(COCO format)
 _formats = ["xyxy", "xywh", "ltwh"]
 

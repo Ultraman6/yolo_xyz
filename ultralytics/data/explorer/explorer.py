@@ -1,4 +1,4 @@
-# Ultralytics YOLO 🚀, AGPL-3.0 license
+# Ultralytics YOLO_xyz 🚀, AGPL-3.0 license
 
 from io import BytesIO
 from pathlib import Path
@@ -56,7 +56,7 @@ class ExplorerDataset(YOLODataset):
 
 
 class Explorer:
-    """Utility class for image embedding, table creation, and similarity querying using LanceDB and YOLO models."""
+    """Utility class for image embedding, table creation, and similarity querying using LanceDB and YOLO_xyz models."""
 
     def __init__(
         self,

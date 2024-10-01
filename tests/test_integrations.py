@@ -1,4 +1,4 @@
-# Ultralytics YOLO 🚀, AGPL-3.0 license
+# Ultralytics YOLO_xyz 🚀, AGPL-3.0 license
 
 import contextlib
 import os
@@ -16,8 +16,8 @@ from ultralytics.utils.checks import check_requirements
 
 @pytest.mark.skipif(not check_requirements("ray", install=False), reason="ray[tune] not installed")
 def test_model_ray_tune():
-    """Tune YOLO model using Ray for hyperparameter optimization."""
-    YOLO("yolo11n-cls.yaml").tune(
+    """Tune YOLO_xyz model using Ray for hyperparameter optimization."""
+    YOLO("yolov8n-cls.yaml").tune(
         use_ray=True, data="imagenet10", grace_period=1, iterations=1, imgsz=32, epochs=1, plots=False, device="cpu"
     )
 
@@ -26,8 +26,7 @@ def test_model_ray_tune():
 def test_mlflow():
     """Test training with MLflow tracking enabled (see https://mlflow.org/ for details)."""
     SETTINGS["mlflow"] = True
-    YOLO("yolo11n-cls.yaml").train(data="imagenet10", imgsz=32, epochs=3, plots=False, device="cpu")
-    SETTINGS["mlflow"] = False
+    YOLO("yolov8n-cls.yaml").train(data="imagenet10", imgsz=32, epochs=3, plots=False, device="cpu")
 
 
 @pytest.mark.skipif(True, reason="Test failing in scheduled CI https://github.com/ultralytics/ultralytics/pull/8868")
@@ -42,7 +41,7 @@ def test_mlflow_keep_run_active():
 
     # Test with MLFLOW_KEEP_RUN_ACTIVE=True
     os.environ["MLFLOW_KEEP_RUN_ACTIVE"] = "True"
-    YOLO("yolo11n-cls.yaml").train(data="imagenet10", imgsz=32, epochs=1, plots=False, device="cpu")
+    YOLO("yolov8n-cls.yaml").train(data="imagenet10", imgsz=32, epochs=1, plots=False, device="cpu")
     status = mlflow.active_run().info.status
     assert status == "RUNNING", "MLflow run should be active when MLFLOW_KEEP_RUN_ACTIVE=True"
 
@@ -50,22 +49,21 @@ def test_mlflow_keep_run_active():
 
     # Test with MLFLOW_KEEP_RUN_ACTIVE=False
     os.environ["MLFLOW_KEEP_RUN_ACTIVE"] = "False"
-    YOLO("yolo11n-cls.yaml").train(data="imagenet10", imgsz=32, epochs=1, plots=False, device="cpu")
+    YOLO("yolov8n-cls.yaml").train(data="imagenet10", imgsz=32, epochs=1, plots=False, device="cpu")
     status = mlflow.get_run(run_id=run_id).info.status
     assert status == "FINISHED", "MLflow run should be ended when MLFLOW_KEEP_RUN_ACTIVE=False"
 
     # Test with MLFLOW_KEEP_RUN_ACTIVE not set
     os.environ.pop("MLFLOW_KEEP_RUN_ACTIVE", None)
-    YOLO("yolo11n-cls.yaml").train(data="imagenet10", imgsz=32, epochs=1, plots=False, device="cpu")
+    YOLO("yolov8n-cls.yaml").train(data="imagenet10", imgsz=32, epochs=1, plots=False, device="cpu")
     status = mlflow.get_run(run_id=run_id).info.status
     assert status == "FINISHED", "MLflow run should be ended by default when MLFLOW_KEEP_RUN_ACTIVE is not set"
-    SETTINGS["mlflow"] = False
 
 
 @pytest.mark.skipif(not check_requirements("tritonclient", install=False), reason="tritonclient[all] not installed")
 def test_triton():
     """
-    Test NVIDIA Triton Server functionalities with YOLO model.
+    Test NVIDIA Triton Server functionalities with YOLO_xyz model.
 
     See https://catalog.ngc.nvidia.com/orgs/nvidia/containers/tritonserver.
     """
@@ -120,29 +118,29 @@ def test_triton():
 
 @pytest.mark.skipif(not check_requirements("pycocotools", install=False), reason="pycocotools not installed")
 def test_pycocotools():
-    """Validate YOLO model predictions on COCO dataset using pycocotools."""
+    """Validate YOLO_xyz model predictions on COCO dataset using pycocotools."""
     from ultralytics.models.yolo.detect import DetectionValidator
     from ultralytics.models.yolo.pose import PoseValidator
     from ultralytics.models.yolo.segment import SegmentationValidator
 
     # Download annotations after each dataset downloads first
-    url = "https://github.com/ultralytics/assets/releases/download/v0.0.0/"
+    url = "https://github.com/ultralytics/assets/releases/download/v8.2.0/"
 
-    args = {"model": "yolo11n.pt", "data": "coco8.yaml", "save_json": True, "imgsz": 64}
+    args = {"model": "yolov8n.pt", "data": "coco8.yaml", "save_json": True, "imgsz": 64}
     validator = DetectionValidator(args=args)
     validator()
     validator.is_coco = True
     download(f"{url}instances_val2017.json", dir=DATASETS_DIR / "coco8/annotations")
     _ = validator.eval_json(validator.stats)
 
-    args = {"model": "yolo11n-seg.pt", "data": "coco8-seg.yaml", "save_json": True, "imgsz": 64}
+    args = {"model": "yolov8n-seg.pt", "data": "coco8-seg.yaml", "save_json": True, "imgsz": 64}
     validator = SegmentationValidator(args=args)
     validator()
     validator.is_coco = True
     download(f"{url}instances_val2017.json", dir=DATASETS_DIR / "coco8-seg/annotations")
     _ = validator.eval_json(validator.stats)
 
-    args = {"model": "yolo11n-pose.pt", "data": "coco8-pose.yaml", "save_json": True, "imgsz": 64}
+    args = {"model": "yolov8n-pose.pt", "data": "coco8-pose.yaml", "save_json": True, "imgsz": 64}
     validator = PoseValidator(args=args)
     validator()
     validator.is_coco = True

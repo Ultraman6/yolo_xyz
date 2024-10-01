@@ -1,4 +1,4 @@
-# Ultralytics YOLO 🚀, AGPL-3.0 license
+# Ultralytics YOLO_xyz 🚀, AGPL-3.0 license
 """Model head modules."""
 
 import copy
@@ -11,11 +11,11 @@ from torch.nn.init import constant_, xavier_uniform_
 from ultralytics.utils.tal import TORCH_1_10, dist2bbox, dist2rbox, make_anchors
 
 from .block import DFL, BNContrastiveHead, ContrastiveHead, Proto
-from .conv import Conv, DWConv
+from .conv import Conv
 from .transformer import MLP, DeformableTransformerDecoder, DeformableTransformerDecoderLayer
 from .utils import bias_init_with_prob, linear_init
 
-__all__ = "Detect", "Segment", "Pose", "Classify", "OBB", "RTDETRDecoder", "v10Detect"
+__all__ = "Detect", "Segment", "Pose", "Classify", "OBB", "RTDETRDecoder", "v10Detect", "WorldDetect", "v10OBB"
 
 
 class Detect(nn.Module):
@@ -41,14 +41,7 @@ class Detect(nn.Module):
         self.cv2 = nn.ModuleList(
             nn.Sequential(Conv(x, c2, 3), Conv(c2, c2, 3), nn.Conv2d(c2, 4 * self.reg_max, 1)) for x in ch
         )
-        self.cv3 = nn.ModuleList(
-            nn.Sequential(
-                nn.Sequential(DWConv(x, x, 3), Conv(x, c3, 1)),
-                nn.Sequential(DWConv(c3, c3, 3), Conv(c3, c3, 1)),
-                nn.Conv2d(c3, self.nc, 1),
-            )
-            for x in ch
-        )
+        self.cv3 = nn.ModuleList(nn.Sequential(Conv(x, c3, 3), Conv(c3, c3, 3), nn.Conv2d(c3, self.nc, 1)) for x in ch)
         self.dfl = DFL(self.reg_max) if self.reg_max > 1 else nn.Identity()
 
         if self.end2end:
@@ -66,6 +59,7 @@ class Detect(nn.Module):
             return x
         y = self._inference(x)
         return y if self.export else (y, x)
+
 
     def forward_end2end(self, x):
         """
@@ -87,8 +81,10 @@ class Detect(nn.Module):
         if self.training:  # Training path
             return {"one2many": x, "one2one": one2one}
 
-        y = self._inference(one2one)
+        # 推荐结果就是one2one路径
+        y = self._inference(one2one)  # 后处理 便于one2one推理
         y = self.postprocess(y.permute(0, 2, 1), self.max_det, self.nc)
+
         return y if self.export else (y, {"one2many": x, "one2one": one2one})
 
     def _inference(self, x):
@@ -102,7 +98,7 @@ class Detect(nn.Module):
 
         if self.export and self.format in {"saved_model", "pb", "tflite", "edgetpu", "tfjs"}:  # avoid TF FlexSplitV ops
             box = x_cat[:, : self.reg_max * 4]
-            cls = x_cat[:, self.reg_max * 4 :]
+            cls = x_cat[:, self.reg_max * 4:]
         else:
             box, cls = x_cat.split((self.reg_max * 4, self.nc), 1)
 
@@ -139,8 +135,8 @@ class Detect(nn.Module):
     @staticmethod
     def postprocess(preds: torch.Tensor, max_det: int, nc: int = 80):
         """
-        Post-processes YOLO model predictions.
-
+        Post-processes YOLO_xyz model predictions.
+        2024-9-19 更新 第二维可接受多种输入（类别数pro数+其他逻辑，如角度参数）
         Args:
             preds (torch.Tensor): Raw predictions with shape (batch_size, num_anchors, 4 + nc) with last dimension
                 format [x, y, w, h, class_probs].
@@ -151,10 +147,11 @@ class Detect(nn.Module):
             (torch.Tensor): Processed predictions with shape (batch_size, min(max_det, num_anchors), 6) and last
                 dimension format [x, y, w, h, max_class_prob, class_index].
         """
-        batch_size, anchors, _ = preds.shape  # i.e. shape(16,8400,84)
-        boxes, scores = preds.split([4, nc], dim=-1)
+        batch_size, anchors, n = preds.shape  # i.e. shape(16,8400,84)
+        print(batch_size, anchors, n, nc)
+        boxes, scores = preds.split([n-nc, nc], dim=-1)
         index = scores.amax(dim=-1).topk(min(max_det, anchors))[1].unsqueeze(-1)
-        boxes = boxes.gather(dim=1, index=index.repeat(1, 1, 4))
+        boxes = boxes.gather(dim=1, index=index.repeat(1, 1, n-nc))
         scores = scores.gather(dim=1, index=index.repeat(1, 1, nc))
         scores, index = scores.flatten(1).topk(min(max_det, anchors))
         i = torch.arange(batch_size)[..., None]  # batch indices
@@ -165,7 +162,7 @@ class Segment(Detect):
     """YOLOv8 Segment head for segmentation models."""
 
     def __init__(self, nc=80, nm=32, npr=256, ch=()):
-        """Initialize the YOLO model attributes such as the number of masks, prototypes, and the convolution layers."""
+        """Initialize the YOLO_xyz model attributes such as the number of masks, prototypes, and the convolution layers."""
         super().__init__(nc, ch)
         self.nm = nm  # number of masks
         self.npr = npr  # number of protos
@@ -173,9 +170,13 @@ class Segment(Detect):
 
         c4 = max(ch[0] // 4, self.nm)
         self.cv4 = nn.ModuleList(nn.Sequential(Conv(x, c4, 3), Conv(c4, c4, 3), nn.Conv2d(c4, self.nm, 1)) for x in ch)
+        if self.end2end:
+            self.one2one_cv4 = copy.deepcopy(self.cv4)
 
     def forward(self, x):
         """Return model outputs and mask coefficients if training, otherwise return outputs and mask coefficients."""
+        if self.end2end:
+           return self.forward_end2end(x)
         p = self.proto(x[0])  # mask protos
         bs = p.shape[0]  # batch size
 
@@ -185,6 +186,47 @@ class Segment(Detect):
             return x, mc, p
         return (torch.cat([x, mc], 1), p) if self.export else (torch.cat([x[0], mc], 1), (x[1], mc, p))
 
+    def forward_end2end(self, x):
+        x_detach = [xi.detach() for xi in x]
+
+        p = self.proto(x[0])  # mask protos
+        bs = p.shape[0]  # batch size
+
+        mc = torch.cat([self.cv4[i](x[i]).view(bs, self.nm, -1) for i in range(self.nl)], 2)  # mask coefficients
+        mc_one2one = torch.cat([self.one2one_cv4[i](x[i]).view(bs, self.nm, -1) for i in range(self.nl)], 2)  # mask coefficients
+        one2one = [
+            torch.cat((self.one2one_cv2[i](x_detach[i]), self.one2one_cv3[i](x_detach[i])), 1) for i in range(self.nl)
+        ]
+        for i in range(self.nl):
+            x[i] = torch.cat((self.cv2[i](x[i]), self.cv3[i](x[i])), 1)
+        if self.training:  # Training path
+            return {"one2many": (x, mc, p), "one2one": (one2one, mc_one2one, p)}
+
+        # 推荐结果就是one2one路径
+        y = self._inference(one2one)  # 后处理 便于one2one推理
+        y = torch.cat([y, mc_one2one], 1)  # 返回维度 batch、max、【x,y,w,h,cls_pro,cls_idx,angle】
+        y = self.postprocess(y.permute(0, 2, 1), self.max_det, self.nc)
+
+        return (y, p) if self.export else (y, {"one2many": (x, mc, p), "one2one": (one2one, mc_one2one, p)})
+
+class v10Segment(Segment):
+    end2end = True  # Retain v10's end-to-end detection output
+    def __init__(self, nc=80, nm=32, npr=256, ch=()):
+        super().__init__(nc, nm, npr, ch)
+        # Recalculate c2, c3, and c4 based on updated ch
+        c3 = max(ch[0], min(self.nc, 100))  # channels
+
+        # Light cls head
+        self.cv3 = nn.ModuleList(
+            nn.Sequential(
+                nn.Sequential(Conv(x, x, 3, g=x), Conv(x, c3, 1)),
+                nn.Sequential(Conv(c3, c3, 3, g=c3), Conv(c3, c3, 1)),
+                nn.Conv2d(c3, self.nc, 1),
+            )
+            for x in ch
+        )
+        self.one2one_cv3 = copy.deepcopy(self.cv3)  # cls
+
 
 class OBB(Detect):
     """YOLOv8 OBB detection head for detection with rotation models."""
@@ -193,50 +235,129 @@ class OBB(Detect):
         """Initialize OBB with number of classes `nc` and layer channels `ch`."""
         super().__init__(nc, ch)
         self.ne = ne  # number of extra parameters
-
-        c4 = max(ch[0] // 4, self.ne)
+        c4 = max(ch[0] // 4, self.ne)  # 角度检测头
         self.cv4 = nn.ModuleList(nn.Sequential(Conv(x, c4, 3), Conv(c4, c4, 3), nn.Conv2d(c4, self.ne, 1)) for x in ch)
+        if self.end2end:
+            self.one2one_cv4 = copy.deepcopy(self.cv4)
 
     def forward(self, x):
         """Concatenates and returns predicted bounding boxes and class probabilities."""
-        bs = x[0].shape[0]  # batch size
-        angle = torch.cat([self.cv4[i](x[i]).view(bs, self.ne, -1) for i in range(self.nl)], 2)  # OBB theta logits
-        # NOTE: set `angle` as an attribute so that `decode_bboxes` could use it.
-        angle = (angle.sigmoid() - 0.25) * math.pi  # [-pi/4, 3pi/4]
-        # angle = angle.sigmoid() * math.pi / 2  # [0, pi/2]
+        if self.end2end:
+            return self.forward_end2end(x)
+        angle = self._angle(x)
         if not self.training:
             self.angle = angle
-        x = Detect.forward(self, x)
+        x = Detect.forward(self, x)  # 包含cls与box的输出
         if self.training:
             return x, angle
-        return torch.cat([x, angle], 1) if self.export else (torch.cat([x[0], angle], 1), (x[1], angle))
+        if self.export:  # 将原始图像
+            return torch.cat([x, angle], 1)
+        else:
+            return (torch.cat([x[0], angle], 1), (x[1], angle))
+
+    def forward_end2end(self, x):
+        x_detach = [xi.detach() for xi in x]
+        angle = self._angle(x)  # 分别生成one2many与one2one的推理角度
+        angle_one2one = self._angle(x_detach,True)
+        if not self.training:
+            self.angle = angle_one2one
+        one2one = [
+            torch.cat((self.one2one_cv2[i](x_detach[i]), self.one2one_cv3[i](x_detach[i])), 1) for i in range(self.nl)
+        ]
+        for i in range(self.nl):
+            x[i] = torch.cat((self.cv2[i](x[i]), self.cv3[i](x[i])), 1)
+        if self.training:  # Training path
+            return {"one2many": (x, angle), "one2one": (one2one, angle_one2one)}
+
+        # 推荐结果就是one2one路径
+        y = self._inference(one2one)  # 后处理 便于one2one推理
+        y = torch.cat([y, angle_one2one], 1)  # 返回维度 batch、max、【x,y,w,h,cls_pro,cls_idx,angle】
+        y = self.postprocess(y.permute(0, 2, 1), self.max_det, self.nc)
+        if self.export:
+            return y
+        else:  # 推理以one2one路径为主
+            return (y, {"one2many": (x, angle), "one2one": (one2one, angle_one2one)})
+
+    def _angle(self, x, one2one=False):
+        module = self.one2one_cv4 if one2one else self.cv4
+        bs = x[0].shape[0]  # batch size
+        angle = torch.cat([module[i](x[i]).view(bs, self.ne, -1) for i in range(self.nl)], 2)  # OBB theta logits
+        angle = (angle.sigmoid() - 0.25) * math.pi  # [-pi/4, 3pi/4]
+        return angle
 
     def decode_bboxes(self, bboxes, anchors):
         """Decode rotated bounding boxes."""
         return dist2rbox(bboxes, self.angle, anchors, dim=1)
 
+class v10OBB(OBB):
+    """
+    v10 OBB detection head for detection with rotation models, retaining v10's end-to-end detection output.
+    """
+
+    end2end = True  # Retain v10's end-to-end detection output
+
+    def __init__(self, nc=80, ne=1, ch=()):
+        """Initialize v10OBB with number of classes `nc`, extra parameters `ne`, and channels `ch`."""
+        super().__init__(nc, ne, ch)
+        # Recalculate c2, c3, and c4 based on updated ch
+        c3 = max(ch[0], min(self.nc, 100))  # channels
+
+        # Light cls head
+        self.cv3 = nn.ModuleList(
+            nn.Sequential(
+                nn.Sequential(Conv(x, x, 3, g=x), Conv(x, c3, 1)),
+                nn.Sequential(Conv(c3, c3, 3, g=c3), Conv(c3, c3, 1)),
+                nn.Conv2d(c3, self.nc, 1),
+            )
+            for x in ch
+        )
+        self.one2one_cv3 = copy.deepcopy(self.cv3)  # cls
 
 class Pose(Detect):
     """YOLOv8 Pose head for keypoints models."""
 
     def __init__(self, nc=80, kpt_shape=(17, 3), ch=()):
-        """Initialize YOLO network with default parameters and Convolutional Layers."""
+        """Initialize YOLO_xyz network with default parameters and Convolutional Layers."""
         super().__init__(nc, ch)
         self.kpt_shape = kpt_shape  # number of keypoints, number of dims (2 for x,y or 3 for x,y,visible)
         self.nk = kpt_shape[0] * kpt_shape[1]  # number of keypoints total
 
         c4 = max(ch[0] // 4, self.nk)
         self.cv4 = nn.ModuleList(nn.Sequential(Conv(x, c4, 3), Conv(c4, c4, 3), nn.Conv2d(c4, self.nk, 1)) for x in ch)
+        if self.end2end:
+            self.one2one_cv4 = copy.deepcopy(self.cv4)
 
     def forward(self, x):
-        """Perform forward pass through YOLO model and return predictions."""
+        """Perform forward pass through YOLO_xyz model and return predictions."""
+        if self.end2end:
+            return self.forward_end2end(x)
         bs = x[0].shape[0]  # batch size
         kpt = torch.cat([self.cv4[i](x[i]).view(bs, self.nk, -1) for i in range(self.nl)], -1)  # (bs, 17*3, h*w)
-        x = Detect.forward(self, x)
+        x = Detect.forward(self, x)  # 这里的是经过父类concat
         if self.training:
             return x, kpt
         pred_kpt = self.kpts_decode(bs, kpt)
         return torch.cat([x, pred_kpt], 1) if self.export else (torch.cat([x[0], pred_kpt], 1), (x[1], kpt))
+
+    def forward_end2end(self, x):
+        bs = x[0].shape[0]  # batch size(无grad)
+        x_detach = [xi.detach() for xi in x]
+        kpt = torch.cat([self.cv4[i](x[i]).view(bs, self.nk, -1) for i in range(self.nl)], -1)  # (bs, 17*3, h*w)
+        kpt_one2one = torch.cat([self.one2one_cv4[i](x_detach[i]).view(bs, self.nk, -1) for i in range(self.nl)], -1)  # (bs, 17*3, h*w)
+        for i in range(self.nl):
+            x[i] = torch.cat((self.cv2[i](x[i]), self.cv3[i](x[i])), 1)
+        one2one = [
+            torch.cat((self.one2one_cv2[i](x_detach[i]), self.one2one_cv3[i](x_detach[i])), 1) for i in range(self.nl)
+        ]
+        if self.training:  # Training path
+            return {"one2many": (x, kpt), "one2one": (one2one, kpt_one2one)}
+
+        # 推荐结果就是one2one路径
+        y = self._inference(one2one)  # 后处理 便于one2one推理
+        pred_kpt = self.kpts_decode(bs, kpt_one2one)
+        y = torch.cat([y, pred_kpt], 1)
+        y = self.postprocess(y.permute(0, 2, 1), self.max_det, self.nc)
+        return y if self.export else (y, {"one2many": (x, kpt), "one2one": (one2one, kpt_one2one)})
 
     def kpts_decode(self, bs, kpts):
         """Decodes keypoints."""
@@ -255,6 +376,23 @@ class Pose(Detect):
             y[:, 1::ndim] = (y[:, 1::ndim] * 2.0 + (self.anchors[1] - 0.5)) * self.strides
             return y
 
+class v10Pose(Pose):
+    end2end = True
+    def __init__(self, nc=80, kpt_shape=(17, 3), ch=()):
+        """Initialize v10Pose with number of classes `nc`, keypoint shape `kpt_shape`, and channels `ch`."""
+        super().__init__(nc, kpt_shape, ch)
+        # Recalculate c2, c3, and c4 based on updated ch
+        c3 = max(ch[0], min(self.nc, 100))
+        # Light cls head
+        self.cv3 = nn.ModuleList(
+            nn.Sequential(
+                nn.Sequential(Conv(x, x, 3, g=x), Conv(x, c3, 1)),
+                nn.Sequential(Conv(c3, c3, 3, g=c3), Conv(c3, c3, 1)),
+                nn.Conv2d(c3, self.nc, 1),
+            )
+            for x in ch
+        )
+        self.one2one_cv3 = copy.deepcopy(self.cv3)  # cls
 
 class Classify(nn.Module):
     """YOLOv8 classification head, i.e. x(b,c1,20,20) to x(b,c2)."""
@@ -269,7 +407,7 @@ class Classify(nn.Module):
         self.linear = nn.Linear(c_, c2)  # to x(b,c2)
 
     def forward(self, x):
-        """Performs a forward pass of the YOLO model on input image data."""
+        """Performs a forward pass of the YOLO_xyz model on input image data."""
         if isinstance(x, list):
             x = torch.cat(x, 1)
         x = self.linear(self.drop(self.pool(self.conv(x)).flatten(1)))
@@ -282,17 +420,11 @@ class WorldDetect(Detect):
     def __init__(self, nc=80, embed=512, with_bn=False, ch=()):
         """Initialize YOLOv8 detection layer with nc classes and layer channels ch."""
         super().__init__(nc, ch)
-        c3 = max(ch[0], min(self.nc, 100))
+        c3 = max(ch[0], min(self.nc, 100))  # 此c3不同于基类，最后卷积为embed而不是nc
         self.cv3 = nn.ModuleList(nn.Sequential(Conv(x, c3, 3), Conv(c3, c3, 3), nn.Conv2d(c3, embed, 1)) for x in ch)
         self.cv4 = nn.ModuleList(BNContrastiveHead(embed) if with_bn else ContrastiveHead() for _ in ch)
 
-    def forward(self, x, text):
-        """Concatenates and returns predicted bounding boxes and class probabilities."""
-        for i in range(self.nl):
-            x[i] = torch.cat((self.cv2[i](x[i]), self.cv4[i](self.cv3[i](x[i]), text)), 1)
-        if self.training:
-            return x
-
+    def _inference(self, x):
         # Inference path
         shape = x[0].shape  # BCHW
         x_cat = torch.cat([xi.view(shape[0], self.nc + self.reg_max * 4, -1) for xi in x], 2)
@@ -302,7 +434,7 @@ class WorldDetect(Detect):
 
         if self.export and self.format in {"saved_model", "pb", "tflite", "edgetpu", "tfjs"}:  # avoid TF FlexSplitV ops
             box = x_cat[:, : self.reg_max * 4]
-            cls = x_cat[:, self.reg_max * 4 :]
+            cls = x_cat[:, self.reg_max * 4:]
         else:
             box, cls = x_cat.split((self.reg_max * 4, self.nc), 1)
 
@@ -316,8 +448,19 @@ class WorldDetect(Detect):
             dbox = self.decode_bboxes(self.dfl(box) * norm, self.anchors.unsqueeze(0) * norm[:, :2])
         else:
             dbox = self.decode_bboxes(self.dfl(box), self.anchors.unsqueeze(0)) * self.strides
+        return torch.cat((dbox, cls.sigmoid()), 1)
 
-        y = torch.cat((dbox, cls.sigmoid()), 1)
+    def forward(self, x, text):
+        """Concatenates and returns predicted bounding boxes and class probabilities."""
+        for i in range(self.nl):
+            k1 = self.cv2[i](x[i])  # bbox
+            k2 = self.cv3[i](x[i])  # cls
+            k3 = self.cv4[i](k2, text)  # clip
+            x[i] = torch.cat((k1, k3), 1)
+        if self.training:
+            return x
+
+        y = self._inference(x)
         return y if self.export else (y, x)
 
     def bias_init(self):
@@ -342,23 +485,23 @@ class RTDETRDecoder(nn.Module):
     export = False  # export mode
 
     def __init__(
-        self,
-        nc=80,
-        ch=(512, 1024, 2048),
-        hd=256,  # hidden dim
-        nq=300,  # num queries
-        ndp=4,  # num decoder points
-        nh=8,  # num head
-        ndl=6,  # num decoder layers
-        d_ffn=1024,  # dim of feedforward
-        dropout=0.0,
-        act=nn.ReLU(),
-        eval_idx=-1,
-        # Training args
-        nd=100,  # num denoising
-        label_noise_ratio=0.5,
-        box_noise_scale=1.0,
-        learnt_init_query=False,
+            self,
+            nc=80,
+            ch=(512, 1024, 2048),
+            hd=256,  # hidden dim
+            nq=300,  # num queries
+            ndp=4,  # num decoder points
+            nh=8,  # num head
+            ndl=6,  # num decoder layers
+            d_ffn=1024,  # dim of feedforward
+            dropout=0.0,
+            act=nn.ReLU(),
+            eval_idx=-1,
+            # Training args
+            nd=100,  # num denoising
+            label_noise_ratio=0.5,
+            box_noise_scale=1.0,
+            learnt_init_query=False,
     ):
         """
         Initializes the RTDETRDecoder module with the given parameters.
@@ -470,7 +613,7 @@ class RTDETRDecoder(nn.Module):
 
             valid_WH = torch.tensor([w, h], dtype=dtype, device=device)
             grid_xy = (grid_xy.unsqueeze(0) + 0.5) / valid_WH  # (1, h, w, 2)
-            wh = torch.ones_like(grid_xy, dtype=dtype, device=device) * grid_size * (2.0**i)
+            wh = torch.ones_like(grid_xy, dtype=dtype, device=device) * grid_size * (2.0 ** i)
             anchors.append(torch.cat([grid_xy, wh], -1).view(-1, h * w, 4))  # (1, h*w, 4)
 
         anchors = torch.cat(anchors, 1)  # (1, h*w*nl, 4)
@@ -595,3 +738,121 @@ class v10Detect(Detect):
             for x in ch
         )
         self.one2one_cv3 = copy.deepcopy(self.cv3)
+
+
+class Worldv10Detect(WorldDetect):
+    """Detection head that combines features from v10Detect and WorldDetect with end-to-end support."""
+
+    end2end = True  # Enable end-to-end detection mode
+
+    def __init__(self, nc=80, embed=512, with_bn=False, ch=()):
+        """
+        Initializes the v10WorldDetect object.
+
+        Args:
+            nc (int): Number of classes.
+            embed (int): Dimension of the embedding space.
+            with_bn (bool): Whether to use batch normalization in the contrastive head.
+            ch (tuple): Tuple of input channel sizes from the backbone.
+        """
+        super().__init__(nc, embed, with_bn, ch)
+        c3 = max(ch[0], min(nc, 100))  # Determine the number of channels for the classification head.
+        self.cv3 = nn.ModuleList(
+            nn.Sequential(
+                nn.Sequential(Conv(x, x, 3, g=x), Conv(x, c3, 1)),
+                nn.Sequential(Conv(c3, c3, 3, g=c3), Conv(c3, c3, 1)),
+                nn.Conv2d(c3, embed, 1),  # Output embeddings instead of class scores.
+            )
+            for x in ch
+        ) # One2one classification head (for end2end detection)
+        self.one2one_cv3 = nn.ModuleList(copy.deepcopy(layer) for layer in self.cv3)
+        # self.one2one_cv4 = nn.ModuleList(
+        #     copy.deepcopy(head) for head in self.cv4
+        # )
+
+    def forward(self, x, text):
+        """
+        Forward pass of the v10WorldDetect module.
+
+        Args:
+            x (list of torch.Tensor): Feature maps from the backbone.
+            text (torch.Tensor): Text embeddings.
+
+        Returns:
+            If training, returns a dictionary containing the outputs of one2many and one2one detections.
+            If inference, returns the post-processed detections and the raw outputs.
+        """
+        if self.end2end:
+            return self.forward_end2end(x, text)
+
+        # Regular forward pass (non-end2end)
+        for i in range(self.nl):
+            # Regression head for bounding box coordinates.
+            k1 = self.cv2[i](x[i])
+
+            # Classification head to produce embeddings.
+            k2 = self.cv3[i](x[i])
+
+            # Compute similarity between image features and text embeddings.
+            k3 = self.cv4[i](k2, text)
+
+            # Concatenate the regression and classification outputs.
+            x[i] = torch.cat((k1, k3), 1)
+
+        if self.training:
+            return x  # Return raw predictions during training.
+
+        y = self._inference(x, text)
+        return y if self.export else (y, x)
+
+    def forward_end2end(self, x, text):
+        """
+        Performs forward pass of the v10WorldDetect module in end2end mode.
+
+        Args:
+            x (list of torch.Tensor): Feature maps from the backbone.
+            text (torch.Tensor): Text embeddings.
+
+        Returns:
+            If training, returns a dictionary containing the outputs of one2many and one2one detections.
+            If inference, returns the post-processed detections and the raw outputs.
+        """
+        # Detach inputs for the one2one path to prevent gradient flow.
+        x_detach = [xi.detach() for xi in x]
+
+        # One2one detection path (uses detached inputs)
+        one2one = []
+        for i in range(self.nl):
+            # Regression head for bounding box coordinates (one2one)
+            k1 = self.one2one_cv2[i](x_detach[i])
+
+            # Classification head to produce embeddings (one2one)
+            k2 = self.one2one_cv3[i](x_detach[i])
+
+            # Compute similarity between image features and text embeddings (one2one)
+            k3 = self.cv4[i](k2, text)
+
+            # Concatenate the regression and classification outputs (one2one)
+            one2one.append(torch.cat((k1, k3), 1))
+
+        # One2many detection path (original inputs)
+        for i in range(self.nl):
+            # Regression head for bounding box coordinates (one2many)
+            k1 = self.cv2[i](x[i])
+
+            # Classification head to produce embeddings (one2many)
+            k2 = self.cv3[i](x[i])
+
+            # Compute similarity between image features and text embeddings (one2many)
+            k3 = self.cv4[i](k2, text)
+
+            # Concatenate the regression and classification outputs (one2many)
+            x[i] = torch.cat((k1, k3), 1)
+
+        if self.training:
+            # Return both one2many and one2one outputs during training
+            return {"one2many": x, "one2one": one2one}
+
+        # Inference mode: Process one2one detections
+        y = self._inference(one2one)
+        return y if self.export else (y, {"one2many": x, "one2one": one2one})

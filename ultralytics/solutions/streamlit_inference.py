@@ -1,4 +1,4 @@
-# Ultralytics YOLO 🚀, AGPL-3.0 license
+# Ultralytics YOLO_xyz 🚀, AGPL-3.0 license
 
 import io
 import time
@@ -67,13 +67,13 @@ def inference(model=None):
         vid_file_name = 0
 
     # Add dropdown menu for model selection
-    available_models = [x.replace("yolo", "YOLO") for x in GITHUB_ASSETS_STEMS if x.startswith("yolov8")]
+    available_models = [x.replace("yolo", "YOLO_xyz") for x in GITHUB_ASSETS_STEMS if x.startswith("yolov8")]
     if model:
         available_models.insert(0, model.split(".pt")[0])  # insert model without suffix as *.pt is added later
 
     selected_model = st.sidebar.selectbox("Model", available_models)
     with st.spinner("Model is downloading..."):
-        model = YOLO(f"{selected_model.lower()}.pt")  # Load the YOLO model
+        model = YOLO(f"{selected_model.lower()}.pt")  # Load the YOLO_xyz model
         class_names = list(model.names.values())  # Convert dictionary to list of class names
     st.success("Model loaded successfully!")
 

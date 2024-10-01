@@ -1,7 +1,6 @@
-# Ultralytics YOLO 🚀, AGPL-3.0 license
+# Ultralytics YOLO_xyz 🚀, AGPL-3.0 license
 
 from pathlib import Path
-
 from ultralytics.engine.model import Model
 from ultralytics.models import yolo
 from ultralytics.nn.tasks import ClassificationModel, DetectionModel, OBBModel, PoseModel, SegmentationModel, WorldModel
@@ -9,17 +8,17 @@ from ultralytics.utils import ROOT, yaml_load
 
 
 class YOLO(Model):
-    """YOLO (You Only Look Once) object detection model."""
+    """YOLO_xyz (You Only Look Once) object detection model."""
 
     def __init__(self, model="yolov8n.pt", task=None, verbose=False):
-        """Initialize YOLO model, switching to YOLOWorld if model filename contains '-world'."""
+        """Initialize YOLO_xyz model, switching to YOLOWorld if model filename contains '-world'."""
         path = Path(model)
         if "-world" in path.stem and path.suffix in {".pt", ".yaml", ".yml"}:  # if YOLOWorld PyTorch model
             new_instance = YOLOWorld(path, verbose=verbose)
             self.__class__ = type(new_instance)
             self.__dict__ = new_instance.__dict__
         else:
-            # Continue with default YOLO initialization
+            # Continue with default YOLO_xyz initialization
             super().__init__(model=model, task=task, verbose=verbose)
 
     @property
@@ -60,7 +59,7 @@ class YOLO(Model):
 
 
 class YOLOWorld(Model):
-    """YOLO-World object detection model."""
+    """YOLO_xyz-World object detection model."""
 
     def __init__(self, model="yolov8s-world.pt", verbose=False) -> None:
         """

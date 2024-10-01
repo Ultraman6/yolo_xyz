@@ -1,4 +1,4 @@
-# Ultralytics YOLO 🚀, AGPL-3.0 license
+# Ultralytics YOLO_xyz 🚀, AGPL-3.0 license
 """Model validation metrics."""
 
 import math
@@ -79,7 +79,7 @@ def bbox_iou(box1, box2, xywh=True, GIoU=False, DIoU=False, CIoU=False, eps=1e-7
         box1 (torch.Tensor): A tensor representing a single bounding box with shape (1, 4).
         box2 (torch.Tensor): A tensor representing n bounding boxes with shape (n, 4).
         xywh (bool, optional): If True, input boxes are in (x, y, w, h) format. If False, input boxes are in
-                               (x1, y1, x2, y2) format. Defaults to True.
+                               (x1, y1, x2, y2) format. Defaults to True.  区分普通框与角度框
         GIoU (bool, optional): If True, calculate Generalized IoU. Defaults to False.
         DIoU (bool, optional): If True, calculate Distance IoU. Defaults to False.
         CIoU (bool, optional): If True, calculate Complete IoU. Defaults to False.
@@ -119,7 +119,7 @@ def bbox_iou(box1, box2, xywh=True, GIoU=False, DIoU=False, CIoU=False, eps=1e-7
                 (b2_x1 + b2_x2 - b1_x1 - b1_x2).pow(2) + (b2_y1 + b2_y2 - b1_y1 - b1_y2).pow(2)
             ) / 4  # center dist**2
             if CIoU:  # https://github.com/Zzh-tju/DIoU-SSD-pytorch/blob/master/utils/box/box_utils.py#L47
-                v = (4 / math.pi**2) * ((w2 / h2).atan() - (w1 / h1).atan()).pow(2)
+                v = (4 / math.pi**2) * ((w2 / h2).atan() - (w1 / h1).atan()).pow(2)  # 角度损失进一步考虑形状差异
                 with torch.no_grad():
                     alpha = v / (v - iou + (1 + eps))
                 return iou - (rho2 / c2 + v * alpha)  # CIoU
@@ -299,7 +299,7 @@ class ConfusionMatrix:
     """
 
     def __init__(self, nc, conf=0.25, iou_thres=0.45, task="detect"):
-        """Initialize attributes for the YOLO model."""
+        """Initialize attributes for the YOLO_xyz model."""
         self.task = task
         self.matrix = np.zeros((nc + 1, nc + 1)) if self.task == "detect" else np.zeros((nc, nc))
         self.nc = nc  # number of classes

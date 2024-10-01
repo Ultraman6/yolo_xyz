@@ -1,4 +1,4 @@
-# Ultralytics YOLO 🚀, AGPL-3.0 license
+# Ultralytics YOLO_xyz 🚀, AGPL-3.0 license
 
 from pathlib import Path
 
@@ -7,14 +7,14 @@ from ultralytics import SAM, YOLO
 
 def auto_annotate(data, det_model="yolov8x.pt", sam_model="sam_b.pt", device="", output_dir=None):
     """
-    Automatically annotates images using a YOLO object detection model and a SAM segmentation model.
+    Automatically annotates images using a YOLO_xyz object detection model and a SAM segmentation model.
 
-    This function processes images in a specified directory, detects objects using a YOLO model, and then generates
+    This function processes images in a specified directory, detects objects using a YOLO_xyz model, and then generates
     segmentation masks using a SAM model. The resulting annotations are saved as text files.
 
     Args:
         data (str): Path to a folder containing images to be annotated.
-        det_model (str): Path or name of the pre-trained YOLO detection model.
+        det_model (str): Path or name of the pre-trained YOLO_xyz detection model.
         sam_model (str): Path or name of the pre-trained SAM segmentation model.
         device (str): Device to run the models on (e.g., 'cpu', 'cuda', '0').
         output_dir (str | None): Directory to save the annotated results. If None, a default directory is created.

@@ -1,4 +1,4 @@
-# Ultralytics YOLO 🚀, AGPL-3.0 license
+# Ultralytics YOLO_xyz 🚀, AGPL-3.0 license
 
 from ultralytics.utils import LOGGER, RANK, SETTINGS, TESTS_RUNNING, ops
 
@@ -93,7 +93,7 @@ def _create_experiment(args):
 
 
 def _fetch_trainer_metadata(trainer):
-    """Returns metadata for YOLO training including epoch and asset saving status."""
+    """Returns metadata for YOLO_xyz training including epoch and asset saving status."""
     curr_epoch = trainer.epoch + 1
 
     train_num_steps_per_epoch = len(trainer.train_loader.dataset) // trainer.batch_size
@@ -160,7 +160,7 @@ def _format_ground_truth_annotations_for_detection(img_idx, image_path, batch, c
 
 
 def _format_prediction_annotations_for_detection(image_path, metadata, class_label_map=None):
-    """Format YOLO predictions for object detection visualization."""
+    """Format YOLO_xyz predictions for object detection visualization."""
     stem = image_path.stem
     image_id = int(stem) if stem.isnumeric() else stem
 
@@ -288,7 +288,7 @@ def _log_model(experiment, trainer):
 
 
 def on_pretrain_routine_start(trainer):
-    """Creates or resumes a CometML experiment at the start of a YOLO pre-training routine."""
+    """Creates or resumes a CometML experiment at the start of a YOLO_xyz pre-training routine."""
     experiment = comet_ml.get_global_experiment()
     is_alive = getattr(experiment, "alive", False)
     if not experiment or not is_alive:

@@ -1,4 +1,4 @@
-# Ultralytics YOLO 🚀, AGPL-3.0 license
+# Ultralytics YOLO_xyz 🚀, AGPL-3.0 license
 
 from ultralytics.utils import LOGGER, SETTINGS, TESTS_RUNNING
 
@@ -77,7 +77,7 @@ def on_pretrain_routine_start(trainer):
             )
             LOGGER.warning(
                 "ClearML Initialized a new task. If you want to run remotely, "
-                "please add clearml-init and connect your arguments before initializing YOLO."
+                "please add clearml-init and connect your arguments before initializing YOLO_xyz."
             )
         task.connect(vars(trainer.args), name="General")
     except Exception as e:
@@ -85,7 +85,7 @@ def on_pretrain_routine_start(trainer):
 
 
 def on_train_epoch_end(trainer):
-    """Logs debug samples for the first epoch of YOLO training and report current training progress."""
+    """Logs debug samples for the first epoch of YOLO_xyz training and report current training progress."""
     if task := Task.current_task():
         # Log debug samples
         if trainer.epoch == 1:

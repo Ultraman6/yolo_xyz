@@ -1,4 +1,4 @@
-# Ultralytics YOLO 🚀, AGPL-3.0 license
+# Ultralytics YOLO_xyz 🚀, AGPL-3.0 license
 
 from ultralytics.data import YOLOConcatDataset, build_grounding, build_yolo_dataset
 from ultralytics.data.utils import check_det_dataset
@@ -46,7 +46,7 @@ class WorldTrainerFromScratch(WorldTrainer):
 
     def build_dataset(self, img_path, mode="train", batch=None):
         """
-        Build YOLO Dataset.
+        Build YOLO_xyz Dataset.
 
         Args:
             img_path (List[str] | str): Path to the folder containing images.
@@ -102,7 +102,7 @@ class WorldTrainerFromScratch(WorldTrainer):
         pass
 
     def final_eval(self):
-        """Performs final evaluation and validation for object detection YOLO-World model."""
+        """Performs final evaluation and validation for object detection YOLO_xyz-World model."""
         val = self.args.data["val"]["yolo_data"][0]
         self.validator.args.data = val
         self.validator.args.split = "minival" if isinstance(val, str) and "lvis" in val else "val"

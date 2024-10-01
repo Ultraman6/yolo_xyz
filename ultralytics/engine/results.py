@@ -1,4 +1,4 @@
-# Ultralytics YOLO 🚀, AGPL-3.0 license
+# Ultralytics YOLO_xyz 🚀, AGPL-3.0 license
 """
 Ultralytics Results, Boxes and Masks classes for handling inference results.
 
@@ -14,7 +14,6 @@ import torch
 
 from ultralytics.data.augment import LetterBox
 from ultralytics.utils import LOGGER, SimpleClass, ops
-from ultralytics.utils.checks import check_requirements
 from ultralytics.utils.plotting import Annotator, colors, save_one_box
 from ultralytics.utils.torch_utils import smart_inference_mode
 
@@ -189,7 +188,7 @@ class Results(SimpleClass):
     A class for storing and manipulating inference results.
 
     This class encapsulates the functionality for handling detection, segmentation, pose estimation,
-    and classification results from YOLO models.
+    and classification results from YOLO_xyz models.
 
     Attributes:
         orig_img (numpy.ndarray): Original image as a numpy array.
@@ -675,8 +674,8 @@ class Results(SimpleClass):
             (str): Path to the saved text file.
 
         Examples:
-            >>> from ultralytics import YOLO
-            >>> model = YOLO("yolov8n.pt")
+            >>> from ultralytics import YOLO_xyz
+            >>> model = YOLO_xyz("yolov8n.pt")
             >>> results = model("path/to/image.jpg")
             >>> for result in results:
             ...     result.save_txt("output.txt")
@@ -819,90 +818,7 @@ class Results(SimpleClass):
 
         return results
 
-    def to_df(self, normalize=False, decimals=5):
-        """
-        Converts detection results to a Pandas Dataframe.
-
-        This method converts the detection results into Pandas Dataframe format. It includes information
-        about detected objects such as bounding boxes, class names, confidence scores, and optionally
-        segmentation masks and keypoints.
-
-        Args:
-            normalize (bool): Whether to normalize the bounding box coordinates by the image dimensions.
-                If True, coordinates will be returned as float values between 0 and 1. Defaults to False.
-            decimals (int): Number of decimal places to round the output values to. Defaults to 5.
-
-        Returns:
-            (DataFrame): A Pandas Dataframe containing all the information in results in an organized way.
-
-        Examples:
-            >>> results = model("path/to/image.jpg")
-            >>> df_result = results[0].to_df()
-            >>> print(df_result)
-        """
-        import pandas as pd
-
-        return pd.DataFrame(self.summary(normalize=normalize, decimals=decimals))
-
-    def to_csv(self, normalize=False, decimals=5, *args, **kwargs):
-        """
-        Converts detection results to a CSV format.
-
-        This method serializes the detection results into a CSV format. It includes information
-        about detected objects such as bounding boxes, class names, confidence scores, and optionally
-        segmentation masks and keypoints.
-
-        Args:
-            normalize (bool): Whether to normalize the bounding box coordinates by the image dimensions.
-                If True, coordinates will be returned as float values between 0 and 1. Defaults to False.
-            decimals (int): Number of decimal places to round the output values to. Defaults to 5.
-            *args (Any): Variable length argument list to be passed to pandas.DataFrame.to_csv().
-            **kwargs (Any): Arbitrary keyword arguments to be passed to pandas.DataFrame.to_csv().
-
-
-        Returns:
-            (str): CSV containing all the information in results in an organized way.
-
-        Examples:
-            >>> results = model("path/to/image.jpg")
-            >>> csv_result = results[0].to_csv()
-            >>> print(csv_result)
-        """
-        return self.to_df(normalize=normalize, decimals=decimals).to_csv(*args, **kwargs)
-
-    def to_xml(self, normalize=False, decimals=5, *args, **kwargs):
-        """
-        Converts detection results to XML format.
-
-        This method serializes the detection results into an XML format. It includes information
-        about detected objects such as bounding boxes, class names, confidence scores, and optionally
-        segmentation masks and keypoints.
-
-        Args:
-            normalize (bool): Whether to normalize the bounding box coordinates by the image dimensions.
-                If True, coordinates will be returned as float values between 0 and 1. Defaults to False.
-            decimals (int): Number of decimal places to round the output values to. Defaults to 5.
-            *args (Any): Variable length argument list to be passed to pandas.DataFrame.to_xml().
-            **kwargs (Any): Arbitrary keyword arguments to be passed to pandas.DataFrame.to_xml().
-
-        Returns:
-            (str): An XML string containing all the information in results in an organized way.
-
-        Examples:
-            >>> results = model("path/to/image.jpg")
-            >>> xml_result = results[0].to_xml()
-            >>> print(xml_result)
-        """
-        check_requirements("lxml")
-        df = self.to_df(normalize=normalize, decimals=decimals)
-        return '<?xml version="1.0" encoding="utf-8"?>\n<root></root>' if df.empty else df.to_xml(*args, **kwargs)
-
     def tojson(self, normalize=False, decimals=5):
-        """Deprecated version of to_json()."""
-        LOGGER.warning("WARNING ⚠️ 'result.tojson()' is deprecated, replace with 'result.to_json()'.")
-        return self.to_json(normalize, decimals)
-
-    def to_json(self, normalize=False, decimals=5):
         """
         Converts detection results to JSON format.
 
@@ -920,7 +836,7 @@ class Results(SimpleClass):
 
         Examples:
             >>> results = model("path/to/image.jpg")
-            >>> json_result = results[0].to_json()
+            >>> json_result = results[0].tojson()
             >>> print(json_result)
 
         Notes:
@@ -1718,8 +1634,8 @@ class OBB(BaseTensor):
 
         Examples:
             >>> import torch
-            >>> from ultralytics import YOLO
-            >>> model = YOLO("yolov8n-obb.pt")
+            >>> from ultralytics import YOLO_xyz
+            >>> model = YOLO_xyz("yolov8n-obb.pt")
             >>> results = model("path/to/image.jpg")
             >>> for result in results:
             ...     obb = result.obb

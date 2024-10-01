@@ -1,4 +1,4 @@
-# Ultralytics YOLO 🚀, AGPL-3.0 license
+# Ultralytics YOLO_xyz 🚀, AGPL-3.0 license
 
 import ast
 import contextlib
@@ -52,7 +52,7 @@ def default_class_names(data=None):
 
 class AutoBackend(nn.Module):
     """
-    Handles dynamic backend selection for running inference using Ultralytics YOLO models.
+    Handles dynamic backend selection for running inference using Ultralytics YOLO_xyz models.
 
     The AutoBackend class is designed to provide an abstraction layer for various inference engines. It supports a wide
     range of formats, each with specific naming conventions as outlined below:
@@ -398,8 +398,8 @@ class AutoBackend(nn.Module):
             from ultralytics.engine.exporter import export_formats
 
             raise TypeError(
-                f"model='{w}' is not a supported model format. Ultralytics supports: {export_formats()['Format']}\n"
-                f"See https://docs.ultralytics.com/modes/predict for help."
+                f"model='{w}' is not a supported model format. "
+                f"See https://docs.ultralytics.com/modes/predict for help.\n\n{export_formats()}"
             )
 
         # Load external metadata YAML
@@ -653,7 +653,7 @@ class AutoBackend(nn.Module):
         """
         from ultralytics.engine.exporter import export_formats
 
-        sf = export_formats()["Suffix"]  # export suffixes
+        sf = list(export_formats().Suffix)  # export suffixes
         if not is_url(p) and not isinstance(p, str):
             check_suffix(p, sf)  # checks
         name = Path(p).name

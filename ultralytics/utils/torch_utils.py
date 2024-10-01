@@ -1,4 +1,4 @@
-# Ultralytics YOLO 🚀, AGPL-3.0 license
+# Ultralytics YOLO_xyz 🚀, AGPL-3.0 license
 
 import contextlib
 import gc
@@ -110,17 +110,15 @@ def autocast(enabled: bool, device: str = "cuda"):
 
 def get_cpu_info():
     """Return a string with system CPU information, i.e. 'Apple M2'."""
-    from ultralytics.utils import PERSISTENT_CACHE  # avoid circular import error
+    with contextlib.suppress(Exception):
+        import cpuinfo  # pip install py-cpuinfo
 
-    if "cpu_info" not in PERSISTENT_CACHE:
-        with contextlib.suppress(Exception):
-            import cpuinfo  # pip install py-cpuinfo
+        k = "brand_raw", "hardware_raw", "arch_string_raw"  # keys sorted by preference (not all keys always available)
+        info = cpuinfo.get_cpu_info()  # info dict
+        string = info.get(k[0] if k[0] in info else k[1] if k[1] in info else k[2], "unknown")
+        return string.replace("(R)", "").replace("CPU ", "").replace("@ ", "")
 
-            k = "brand_raw", "hardware_raw", "arch_string_raw"  # keys sorted by preference
-            info = cpuinfo.get_cpu_info()  # info dict
-            string = info.get(k[0] if k[0] in info else k[1] if k[1] in info else k[2], "unknown")
-            PERSISTENT_CACHE["cpu_info"] = string.replace("(R)", "").replace("CPU ", "").replace("@ ", "")
-    return PERSISTENT_CACHE.get("cpu_info", "unknown")
+    return "unknown"
 
 
 def select_device(device="", batch=0, newline=False, verbose=True):
@@ -159,7 +157,7 @@ def select_device(device="", batch=0, newline=False, verbose=True):
     if isinstance(device, torch.device):
         return device
 
-    s = f"Ultralytics {__version__} 🚀 Python-{PYTHON_VERSION} torch-{torch.__version__} "
+    s = f"Ultralytics YOLOv{__version__} 🚀 Python-{PYTHON_VERSION} torch-{torch.__version__} "
     device = str(device).lower()
     for remove in "cuda:", "none", "(", ")", "[", "]", "'", " ":
         device = device.replace(remove, "")  # to string, 'cuda:0' -> '0' and '(0, 1)' -> '0,1'
@@ -249,7 +247,7 @@ def fuse_conv_and_bn(conv, bn):
     )
 
     # Prepare filters
-    w_conv = conv.weight.view(conv.out_channels, -1)
+    w_conv = conv.weight.clone().view(conv.out_channels, -1)
     w_bn = torch.diag(bn.weight.div(torch.sqrt(bn.eps + bn.running_var)))
     fusedconv.weight.copy_(torch.mm(w_bn, w_conv).view(fusedconv.weight.shape))
 
@@ -280,7 +278,7 @@ def fuse_deconv_and_bn(deconv, bn):
     )
 
     # Prepare filters
-    w_deconv = deconv.weight.view(deconv.out_channels, -1)
+    w_deconv = deconv.weight.clone().view(deconv.out_channels, -1)
     w_bn = torch.diag(bn.weight.div(torch.sqrt(bn.eps + bn.running_var)))
     fuseddconv.weight.copy_(torch.mm(w_bn, w_deconv).view(fuseddconv.weight.shape))
 
@@ -318,18 +316,18 @@ def model_info(model, detailed=False, verbose=True, imgsz=640):
     fused = " (fused)" if getattr(model, "is_fused", lambda: False)() else ""
     fs = f", {flops:.1f} GFLOPs" if flops else ""
     yaml_file = getattr(model, "yaml_file", "") or getattr(model, "yaml", {}).get("yaml_file", "")
-    model_name = Path(yaml_file).stem.replace("yolo", "YOLO") or "Model"
+    model_name = Path(yaml_file).stem.replace("yolo", "YOLO_xyz") or "Model"
     LOGGER.info(f"{model_name} summary{fused}: {n_l:,} layers, {n_p:,} parameters, {n_g:,} gradients{fs}")
     return n_l, n_p, n_g, flops
 
 
 def get_num_params(model):
-    """Return the total number of parameters in a YOLO model."""
+    """Return the total number of parameters in a YOLO_xyz model."""
     return sum(x.numel() for x in model.parameters())
 
 
 def get_num_gradients(model):
-    """Return the total number of parameters with gradients in a YOLO model."""
+    """Return the total number of parameters with gradients in a YOLO_xyz model."""
     return sum(x.numel() for x in model.parameters() if x.requires_grad)
 
 
@@ -364,7 +362,7 @@ def model_info_for_loggers(trainer):
 
 
 def get_flops(model, imgsz=640):
-    """Return a YOLO model's FLOPs."""
+    """Return a YOLO_xyz model's FLOPs."""
     if not thop:
         return 0.0  # if not installed return 0.0 GFLOPs
 
@@ -535,17 +533,16 @@ class ModelEMA:
             copy_attr(self.ema, model, include, exclude)
 
 
-def strip_optimizer(f: Union[str, Path] = "best.pt", s: str = "", updates: dict = None) -> dict:
+def strip_optimizer(f: Union[str, Path] = "best.pt", s: str = "") -> None:
     """
     Strip optimizer from 'f' to finalize training, optionally save as 's'.
 
     Args:
         f (str): file path to model to strip the optimizer from. Default is 'best.pt'.
         s (str): file path to save the model with stripped optimizer to. If not provided, 'f' will be overwritten.
-        updates (dict): a dictionary of updates to overlay onto the checkpoint before saving.
 
     Returns:
-        (dict): The combined checkpoint dictionary.
+        None
 
     Example:
         ```python
@@ -565,9 +562,9 @@ def strip_optimizer(f: Union[str, Path] = "best.pt", s: str = "", updates: dict 
         assert "model" in x, "'model' missing from checkpoint"
     except Exception as e:
         LOGGER.warning(f"WARNING ⚠️ Skipping {f}, not a valid Ultralytics model: {e}")
-        return {}
+        return
 
-    metadata = {
+    updates = {
         "date": datetime.now().isoformat(),
         "version": __version__,
         "license": "AGPL-3.0 License (https://ultralytics.com/license)",
@@ -594,11 +591,9 @@ def strip_optimizer(f: Union[str, Path] = "best.pt", s: str = "", updates: dict 
     # x['model'].args = x['train_args']
 
     # Save
-    combined = {**metadata, **x, **(updates or {})}
-    torch.save(combined, s or f)  # combine dicts (prefer to the right)
+    torch.save({**updates, **x}, s or f, use_dill=False)  # combine dicts (prefer to the right)
     mb = os.path.getsize(s or f) / 1e6  # file size
     LOGGER.info(f"Optimizer stripped from {f},{f' saved as {s},' if s else ''} {mb:.1f}MB")
-    return combined
 
 
 def convert_optimizer_state_dict_to_fp16(state_dict):

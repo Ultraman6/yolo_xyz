@@ -1,4 +1,4 @@
-# Ultralytics YOLO 🚀, AGPL-3.0 license
+# Ultralytics YOLO_xyz 🚀, AGPL-3.0 license
 
 import contextlib
 
@@ -44,7 +44,7 @@ def _log_tensorboard_graph(trainer):
         warnings.simplefilter("ignore", category=UserWarning)  # suppress jit trace warning
         warnings.simplefilter("ignore", category=torch.jit.TracerWarning)  # suppress jit trace warning
 
-        # Try simple method first (YOLO)
+        # Try simple method first (YOLO_xyz)
         with contextlib.suppress(Exception):
             trainer.model.eval()  # place in .eval() mode to avoid BatchNorm statistics changes
             WRITER.add_graph(torch.jit.trace(de_parallel(trainer.model), im, strict=False), [])

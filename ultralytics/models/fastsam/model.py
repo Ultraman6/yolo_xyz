@@ -1,4 +1,4 @@
-# Ultralytics YOLO 🚀, AGPL-3.0 license
+# Ultralytics YOLO_xyz 🚀, AGPL-3.0 license
 
 from pathlib import Path
 
@@ -22,7 +22,7 @@ class FastSAM(Model):
     """
 
     def __init__(self, model="FastSAM-x.pt"):
-        """Call the __init__ method of the parent class (YOLO) with the updated default model."""
+        """Call the __init__ method of the parent class (YOLO_xyz) with the updated default model."""
         if str(model) == "FastSAM.pt":
             model = "FastSAM-x.pt"
         assert Path(model).suffix not in {".yaml", ".yml"}, "FastSAM models only support pre-trained models."
